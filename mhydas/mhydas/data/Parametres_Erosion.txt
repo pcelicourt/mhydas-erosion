@@ -1,0 +1,49 @@
+% Parametres Erosion de MHYDAS_UH
+% 
+% Code = valeur % commentaires
+%
+% separateur =
+% commentaire %
+
+%**************************************************************************
+Long_UH 	   = 60       % longueur suivant la pente de la parcelle (m)
+Larg_UH		   = 20       % largeur de la parcelle (m)
+Nb_motifs	   = 13       % nombre de rigoles ou de motifs identiques sur la largeur
+Nb_unit        = 3        % nombre d'unités élémentaires (par motif) issues du découpage des rigoles amont-aval (selon la pente)
+Larg_rill      = 0.10     % largeur de la rigole supposée rectangulaire (m)
+Seuil_Min      = 0.001    % seuil minimal de la pente (m/m)
+Seuil_Conv     = 0.000001 % seuil de convergence (en m) pour le calcul de la hauteur d'eau dans les rigoles (méthode de Newton)
+Rugo_Strickler = 5        % Rugosité Strickler des rigoles
+
+%********************   DETACHEMENT PAR SPLASH  ***************************
+% LISEM
+SDR_max        = 0.25     % SDR initial
+Ruissel_max    = 50       % Valeur du ruissellement en mm/h nécessaire pour atteindre 91% du SDR_init
+AGGRSTAB       = 8        % Erodibilité: nb de gouttes pour diminuer de moitié la taille des agrégats
+MWD            = 600e-6   % Media ponderada do diametro medio das particulas valor medio do artigo do Yves (m)
+k_euro         = 0.30        % index of detachability must be obtained experimentally (g.J^-1)
+%**************************   COUVERT VEGETAL   ***************************
+% LISEM
+Surf_couvert   = 0.15     % Surface du motif sous couvert végétal (% de la surface totale du motif)
+Haut_canopee   = 0.8      % Hauteur du couvert végétal occupant un motif
+
+%***************   DETACHEMENT PAR LE RUISSELLEMENT  **********************
+% LISEM
+COH            = 7        % Paramètre  d'érodibilité (tests Torvane) (kPa)
+D50_Sed        = 0.00010  % Diamètre médian des particules (m)
+Dens_Sed       = 2.65     % Densité des sédiments 
+
+%******************************   DEPOT   *********************************
+Visc_fluide    = 0.000001 % Viscosité moléculaire cinématique de l'eau (m²/s)
+Dens_fluide    = 1        % Densité de l'eau 
+Coeff_Phi      = 0.18     % Dégré d'homogénéité du profil vertical de concentration dans la lame d'eau [0-1]
+
+%********************************  PENTE   ********************************
+Pente_1 = 0.16  % declividade do primeiro perfil de pente
+Pente_2 = 0.10  % declividade do segundo perfil de pente
+Pente_3 = 0.07  % declividade do terceiro perfil de pente
+
+Dist_1  = 20    % distancia do primeiro perfil de pente
+Dist_2  = 20    % distancia do segundo perfil de pente
+Dist_3	= 20    % distancia do terceiro perfil de pente
+

@@ -1,0 +1,5 @@
+% longueur 	pente
+% pourcent 	m/m
+0.33 	0.16
+0.66 	0.1
+1 	0.07

@@ -1,0 +1,54 @@
+% Parametres Erosion de MHYDAS_UH
+% 
+% Code = valeur % commentaires
+%
+% separateur =
+% commentaire %
+%**************************************************************************
+
+Long_UH 	   = 60      % longueur suivant la pente de la parcelle (m)
+Larg_UH		   = 20      % largeur de la parcelle (m)
+Nb_motifs	   = 13      % nombre de rigoles ou de motifs identiques sur la largeur
+Nb_unit        = 3     % nombre d'unités élémentaires (par motif) issues du découpage des rigoles amont-aval (selon la pente)
+Larg_rill      = 0.10    % largeur de la rigole supposée rectangulaire (m)
+Seuil_Min      = 0.001   % seuil minimal de la pente (m/m)
+Seuil_Conv     = 0.000001  % seuil de convergence (en m) pour le calcul de la hauteur d'eau dans les rigoles (méthode de Newton)
+Rugo_Strickler = 5    % Rugosité Strickler des rigoles
+
+%********************   DETACHEMENT PAR SPLASH  ***************************
+% WEPP ou LISEM
+SDR_init       = 0.25  % SDR initial
+Ruissel_max = 50 % Valeur du ruissellement en mm/h nécessaire pour atteindre 91% du SDR_init
+
+
+% LISEM
+Erodib_LISEM   = 6     % Erodibilité: nb de gouttes pour diminuer de moitié la taille des agrégats
+
+% WEPP
+Argile         = 0.184   % Fraction représentée par l'argile
+Sable          = 0.269   % Fraction représentée par le sable
+Sablefin       = 0.153   % Fraction représentée par le sable très fin (20-50 µm)
+
+%**************************   COUVERT VEGETAL   ***************************
+
+Surf_couvert   = 0.15    % Surface du motif sous couvert végétal (% de la surface totale du motif)
+Haut_canopee   = 0.8     % Hauteur du couvert végétal occupant un motif
+
+%***************   DETACHEMENT PAR LE RUISSELLEMENT  **********************
+% LISEM
+Coh_LISEM      = 7     % Paramètre  d'érodibilité (tests Torvane) (kPa)
+D50_Sed        = 0.00010 % Diamètre médian des particules (m)
+Dens_Sed       = 2.65    % Densité des sédiments 
+
+% WEPP
+
+
+%******************************   DEPOT   *********************************
+
+%Ray_sed        = 0.00050 % Rayon des particules (cm)
+Visc_fluide    = 0.01     % Viscosité dynamique de l'eau à 20°C (dyne.sec/cm-2)--> 1 Poise = 1 dyne.sec/cm-2 (Visc dynamique eau = 1 centipoise)
+Dens_fluide    = 1        % Densité de l'eau 
+Corr_Vs        = 0.0     % Coefficient de correction (en %) de la vitesse Vs
+
+
+
