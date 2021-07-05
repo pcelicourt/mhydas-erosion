@@ -28,9 +28,9 @@ def read_config_file(file_path):
         )
 
 
-def read_model_config_file(file_path=None):
+def read_main_config_file(file_path=None):
     if not file_path:
-        model_config_file = glob.glob(default_config_file_dir + "/*.ini")
+        model_config_file = glob.glob(default_config_file_dir + "/config.ini")
     else:
         if path.exists(file_path):
             model_config_file = glob.glob(file_path)
@@ -39,12 +39,23 @@ def read_model_config_file(file_path=None):
     return read_config_file(model_config_file[-1])
 
 
-def get_model_global_parameters(file_path):
-    return read_config_file(file_path)
+def get_global_model_parameters_config_file(file_path=None):
+    if not file_path:
+        model_config_file = glob.glob(default_config_file_dir + "/global_parameters.ini")
+    else:
+        if path.exists(file_path):
+            model_config_file = glob.glob(file_path)
+        else:
+            model_config_file = []
+    return read_config_file(model_config_file[-1])
 
 
-def get_erosion_model_parameters(file_path):
-    return read_config_file(file_path)
-
-
-print(read_model_config_file(r"C:\Users\Paul Celicourt\Documents\GitHub\mhydas\mhydas\mhydas\data\config.ini"))
+def get_specific_model_parameters_config_file(file_path=None):
+    if not file_path:
+        model_config_file = glob.glob(default_config_file_dir + "/specific_parameters.ini")
+    else:
+        if path.exists(file_path):
+            model_config_file = glob.glob(file_path)
+        else:
+            model_config_file = []
+    return read_config_file(model_config_file[-1])
