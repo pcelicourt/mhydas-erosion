@@ -61,13 +61,22 @@ class Model():
             self.specific_param_config_file_path = self.set_config_file(default_config_file_path)
 
     def get_config_file(self):
-        return self.config_file_path
+        try:
+            return self.config_file_path
+        except:
+            raise
 
     def get_global_parameters_file(self):
-        return self.global_param_file_path
+        try:
+            return self.global_param_config_file_path
+        except:
+            raise
 
     def get_specific_parameters_config_file(self):
-        return self.specific_param_file_path
+        try:
+            return self.specific_param_config_file_path
+        except:
+            raise
 
 if __name__ == '__main__':
     new_model = Model(data_directory=default_data_file_dir)
