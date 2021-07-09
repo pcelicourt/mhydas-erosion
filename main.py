@@ -1,12 +1,12 @@
 
 import glob
 import os
-from mhydas.mhydas.erosion import model
+from mhydas.mhydas.erosion import erosion
 
 
 data_file_dir = "./mhydas/mhydas/data/"
 
-new_erosion_model = model.Model(data_file_dir)
+new_erosion_model = erosion.Model(data_file_dir)
 
 
 # Press the green button in the gutter to run the script.

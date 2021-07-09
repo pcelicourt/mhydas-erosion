@@ -20,12 +20,7 @@ def read_main_config_file(file_path):
             print(config_file_sections)
         return file_content
     else:
-        raise FileNotFoundError(
-                                errno.ENOENT,
-                                os.strerror(errno.ENOENT),
-                                file_path
-        )
-
+        file_not_found_error(file_path)
 
 def read_model_parameters_config_file(file_path=None):
     config = configparser.ConfigParser()
@@ -40,17 +35,18 @@ def read_model_parameters_config_file(file_path=None):
                 file_content[sub_key] = float(config[key][sub_key])
         return file_content
     else:
-        raise FileNotFoundError(
-                                errno.ENOENT,
-                                os.strerror(errno.ENOENT),
-                                file_path
-        )
+        file_not_found_error(file_path)
 
-
+def file_not_found_error(file_name):
+    raise FileNotFoundError(
+        errno.ENOENT,
+        os.strerror(errno.ENOENT),
+        file_name
+    )
 # def read_specggific_model_parameters_config_file(file_path=None):
 #     if not file_path:
 #         model_config_file = glob.glob(os.path.join(default_config_file_dir,
-#                                                 "specific_parameters.ini"
+#                                                 "local_parameters.ini"
 #                                                 )
 #                                       )
 #     else:
