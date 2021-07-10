@@ -1,6 +1,9 @@
 import glob
 import os
 import errno
+from datetime import datetime
+
+import pandas as pd
 
 from mhydas.mhydas.utilities import filesmanager, variablesdefinition
 from mhydas.mhydas.utilities.datetimetransformation import disaggregate_date_time_from_minute_to_seconds
@@ -19,6 +22,7 @@ class Model():
         self.default_global_param_config_file_name = "global_parameters.ini"
         self.default_specific_param_config_file_name = "local_parameters.ini"
         self.parameters = {}
+        self.kteste = 1
 
         if main_config_file_name:
             _main_config_file_path = os.path.join(self.data_directory,
@@ -88,13 +92,22 @@ class Model():
         )
         return data
 
+    def get_streamflow_data(self):
+        columns = ['Datetime', 'flow_L_s', 'flow_m3_s']
+        streamflow_data = pd.DataFrame(columns=columns)
+        data = pd.read_csv(self.main_config_file_content.get(variablesdefinition.streamflow),
+                                        sep="\t", skiprows=2
+                           )
+        for index, row in data.iterrows():
+            values = [datetime(*(row.values[:6])), row.values[6], row.values[6] * 0.001]
+            streamflow_data = streamflow_data.append(dict(zip(columns, values)), ignore_index=True)
+        return streamflow_data
 
 if __name__ == '__main__':
     new_model = Model(data_directory=default_data_file_dir)
     new_model.set_parameters()
-    #print(new_model.get_local_parameters())
-    #print(new_model.get_global_parameters())
-    print(new_model.get_precipitation_data())
+    #print(new_model.get_precipitation_data())
+    print(new_model.get_streamflow_data())
     # new_model.set_global_parameters_config_file()
     # new_model.set_specific_parameters_config_file()
     # print(filesmanager.read_main_config_file(new_model.main_config_file_path))
