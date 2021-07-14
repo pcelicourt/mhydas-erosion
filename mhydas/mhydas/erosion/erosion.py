@@ -7,6 +7,7 @@ import pandas as pd
 
 from mhydas.mhydas.utilities import filesmanager, variablesdefinition
 from mhydas.mhydas.utilities.datetimetransformation import disaggregate_date_time_from_minute_to_seconds
+from mhydas.mhydas.erosion import infiltration
 
 default_data_file_dir = "../data/"
 
@@ -93,7 +94,9 @@ class Model():
         return data
 
     def get_streamflow_data(self):
-        columns = ['Datetime', 'flow_L_s', 'flow_m3_s']
+        columns = [variablesdefinition.datetime, variablesdefinition.streamflow_label,
+                   variablesdefinition.streamflow_label_custom
+                ]
         streamflow_data = pd.DataFrame(columns=columns)
         data = pd.read_csv(self.main_config_file_content.get(variablesdefinition.streamflow),
                                         sep="\t", skiprows=2
@@ -103,11 +106,45 @@ class Model():
             streamflow_data = streamflow_data.append(dict(zip(columns, values)), ignore_index=True)
         return streamflow_data
 
+    def get_sediment_concentration_data(self):
+        columns = [variablesdefinition.datetime, variablesdefinition.concentration_label]
+        mes_concentration_data = pd.DataFrame(columns=columns)
+        data = pd.read_csv(self.main_config_file_content.get(variablesdefinition.mes_concentration),
+                                        sep="\t"
+                           )
+        for index, row in data.iterrows():
+            print(*(row.values[:5]))
+            values = [datetime(*list(map(int, row.values[:5]))), row.values[6]]
+            mes_concentration_data = mes_concentration_data.append(dict(zip(columns, values)), ignore_index=True)
+        return mes_concentration_data
+
+    def get_infiltration(self):
+        precipitation_data = self.get_precipitation_data()
+        print(self.parameters)
+        _global_parameters = self.parameters[variablesdefinition.global_param]
+        if _global_parameters[variablesdefinition.code_production] == 1:
+            tetaet = (_global_parameters[variablesdefinition.tetai] - _global_parameters[variablesdefinition.tetar]) / \
+                     (_global_parameters[variablesdefinition.tetas] - _global_parameters[variablesdefinition.tetar])
+            storage_and_suction_factor = _global_parameters[variablesdefinition.hc] * (1 - 1 * (tetaet**6)) * \
+                                         (_global_parameters[variablesdefinition.tetas] -
+                                          _global_parameters[variablesdefinition.tetai]
+                                          )
+
+            infiltration_data = infiltration.morelseytouxmethod(precipitation_data,
+                                                                       storage_and_suction_factor,
+                                                                       _global_parameters
+                                                                       )
+            print(infiltration_data.head())
+        #return precipitation_data - net_precipitation
+
+
 if __name__ == '__main__':
     new_model = Model(data_directory=default_data_file_dir)
     new_model.set_parameters()
     #print(new_model.get_precipitation_data())
-    print(new_model.get_streamflow_data())
+    #print(new_model.get_streamflow_data())
+    #print(new_model.get_sediment_concentration_data())
+    new_model.get_infiltration()
     # new_model.set_global_parameters_config_file()
     # new_model.set_specific_parameters_config_file()
     # print(filesmanager.read_main_config_file(new_model.main_config_file_path))
