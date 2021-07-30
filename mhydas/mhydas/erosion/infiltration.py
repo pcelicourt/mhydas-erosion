@@ -18,7 +18,7 @@ def morelseytouxmethod(precipitation, storage_and_suction_factor, parameters_as_
             if cond_sat < 1 and index <= (precipitation_data_length - 1):
                 cumulative_precipitation += precipitation[variablesdefinition.precipitation_label_custom].values[index]
                 if re[index + 1] > 1:
-                    tp1 = index * parameters_as_dict[variablesdefinition.dt] + (1 / r[index + 1 ]) * \
+                    tp1 = index * parameters_as_dict[variablesdefinition.dt] + (1 / r[index + 1]) * \
                           ((storage_and_suction_factor / (re[index + 1] - 1)) - cumulative_precipitation)
                     if tp1 <= (index + 1) * parameters_as_dict[variablesdefinition.dt]:
                         if tp1 > index * parameters_as_dict[variablesdefinition.dt]:
@@ -57,13 +57,19 @@ def morelseytouxmethod(precipitation, storage_and_suction_factor, parameters_as_
             for i in range(ip +1, precipitation_data_length):
                 innertime_steps[i] = i * parameters_as_dict[variablesdefinition.dt] - tp
                 critere = 0
-                parameters_as_dict["dt1"] = dw1 * parameters_as_dict[variablesdefinition.beta] / parameters_as_dict[variablesdefinition.ks] - (wp * (parameters_as_dict[variablesdefinition.beta] * rpe - 1) / parameters_as_dict[variablesdefinition.ks]) * math.log(
-                    (rpe * wp + dw1) / (rpe * wp))
+                parameters_as_dict["dt1"] = dw1 * parameters_as_dict[variablesdefinition.beta] / \
+                                            parameters_as_dict[variablesdefinition.ks] - \
+                                            (wp * (parameters_as_dict[variablesdefinition.beta] * rpe - 1) /
+                                             parameters_as_dict[variablesdefinition.ks]) * \
+                                            math.log((rpe * wp + dw1) / (rpe * wp))
                 dw2 = dw1 + distance_resolution
                 while critere == 0:
-                    parameters_as_dict["dt2"] = (dw2 * parameters_as_dict[variablesdefinition.beta] / parameters_as_dict[variablesdefinition.ks]) - (wp * (parameters_as_dict[variablesdefinition.beta] * rpe - 1) / parameters_as_dict[variablesdefinition.ks]) * math.log(
-                        (rpe * wp + dw2) / (rpe * wp))
-                    if innertime_steps[i] <= parameters_as_dict["dt2"] and innertime_steps[i] > parameters_as_dict["dt1"]:
+                    parameters_as_dict["dt2"] = (dw2 * parameters_as_dict[variablesdefinition.beta] /
+                                                 parameters_as_dict[variablesdefinition.ks]) - \
+                                                (wp * (parameters_as_dict[variablesdefinition.beta] * rpe - 1) /
+                                                 parameters_as_dict[variablesdefinition.ks]) * \
+                                                math.log((rpe * wp + dw2) / (rpe * wp))
+                    if innertime_steps[i]<=parameters_as_dict["dt2"] and innertime_steps[i]>parameters_as_dict["dt1"]:
                         deltawi = dw2 - 0.5 * distance_resolution
                         dw1 = dw2 - 2 * distance_resolution
                         critere = 1
@@ -82,12 +88,12 @@ def morelseytouxmethod(precipitation, storage_and_suction_factor, parameters_as_
                                            parameters_as_dict[variablesdefinition.dt]
                 if r[i] <= infiltration_capacity[i]:
                     net_precipitation[i] = 0
-        precipitation["infiltration_capacity"] = infiltration_capacity
-        precipitation["time_step"] = time_steps
-        precipitation["net_precipitation"] = net_precipitation
-        precipitation["infiltration_rate"] = \
-            precipitation[variablesdefinition.precipitation_label_custom]-precipitation["net_precipitation"]
-        return precipitation#time_steps, infiltration_capacity, net_precipitation
+        #precipitation["infiltration_capacity"] = infiltration_capacity
+        #precipitation["time_step"] = time_steps
+        #precipitation["net_precipitation"] = net_precipitation
+        #precipitation["infiltration_rate"] = \
+            #precipitation[variablesdefinition.precipitation_label_custom]-precipitation["net_precipitation"]
+        return time_steps, infiltration_capacity, net_precipitation#precipitation#time_steps, infiltration_capacity, net_precipitation
 
 def philipmethod():
     pass

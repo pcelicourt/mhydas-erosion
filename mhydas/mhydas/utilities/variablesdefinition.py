@@ -66,3 +66,5 @@ streamflow_label = "flow_L_s"
 streamflow_label_custom = "flow_m3_s"
 concentration_label= 'concentration_L_s'
 infiltration_rate = "infiltration_rate"
+time_step = "time_step"
+net_precipitation = "net_precipitation"
