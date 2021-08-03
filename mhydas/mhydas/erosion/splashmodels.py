@@ -46,7 +46,7 @@ def mean_weight_diameter(precipitation, inflow_unit, Q_CALC_UNIT, unit_width, un
                 Splash_Unit_LISEM.insert(j, 0)
             else:
                 #% Calcul du splash en Kg/pas de temps
-                Splash_direct.insert(j, (((2.1e-4/local_param_as_dict[variablesdefinition.mwd]*kteste)*KE_nu(jj,1)*
+                Splash_direct.insert(j, (((2.1e-4/local_param_as_dict[variablesdefinition.mwd]*kteste)*KE_nu[j]*
                                       (precipitation[variablesdefinition.precipitation_label_custom][j]))*(
                                         (1-local_param_as_dict[
                                             variablesdefinition.surf_couvert
@@ -58,7 +58,7 @@ def mean_weight_diameter(precipitation, inflow_unit, Q_CALC_UNIT, unit_width, un
                                        (precipitation[variablesdefinition.precipitation_label_custom][j]))*(
                         local_param_as_dict[variablesdefinition.surf_couvert]*unit_width*unit_length))
 
-                Splash_Unit_LISEM.insert(j, (Splash_direct[j] + Splash_indirect[j])*SDR_ajust_Q[j])#;%*PARAM.dt;
+                Splash_Unit_LISEM.insert(j, (Splash_direct[j] + Splash_indirect[j])*SDR_ajust_Q[j])
 
                 #% Calcul des concentrations issues du splash
             if inflow_unit[j] == 0:
