@@ -268,7 +268,11 @@ class Model:
         Q_CALC_UNIT.insert(int(_local_parameters[variablesdefinition.nb_unit]), self.Q_sortie_motif)
         H_CALC_UNIT.insert(int(_local_parameters[variablesdefinition.nb_unit]), H_sortie_motif)#; % Calcul avec pente du dernier tronçon
         V_CALC_UNIT.insert(int(_local_parameters[variablesdefinition.nb_unit]), V_sortie_motif)#; % Calcul avec pente du dernier tronçon
+        Q_CALC_UNIT = np.array(Q_CALC_UNIT).T
         #print(Q_CALC_UNIT)
+        H_CALC_UNIT = np.array(H_CALC_UNIT).T
+        V_CALC_UNIT = np.array(V_CALC_UNIT).T
+        Q_CALC_SORTIE = np.array(Q_CALC_SORTIE).T
         return Q_CALC_UNIT, H_CALC_UNIT, V_CALC_UNIT, Q_CALC_SORTIE
 
 

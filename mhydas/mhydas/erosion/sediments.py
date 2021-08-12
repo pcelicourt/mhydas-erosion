@@ -195,52 +195,63 @@ def sediments_concentration_per_unit(SPLASH_CALC_UNIT_LISEM, H_CALC_UNIT,  V_CAL
     CALC_PROD_INTERNE = []
     MASSE_SED = []
     CALC_TC_LISEM = []
-    CALC_VOL_TR_LISEM.insert(0, [0]*local_parameters_as_dict[variablesdefinition.nb_unit])
+    nb_unit = int(local_parameters_as_dict[variablesdefinition.nb_unit])
+    CALC_VOL_TR_LISEM.insert(0, [0]*nb_unit)
     #%bilan masse sédiments
-    CALC_CONC_TR_LISEM.insert(0, [0]*(local_parameters_as_dict[variablesdefinition.nb_unit] + 1))
-    CALC_PROD_INTERNE.insert(0, [0]*local_parameters_as_dict[variablesdefinition.nb_unit])
-    MASSE_SED.insert(0, [0]*local_parameters_as_dict[variablesdefinition.nb_unit])
-    CALC_TC_LISEM.insert(0, [0]*local_parameters_as_dict[variablesdefinition.nb_unit])
+    CALC_CONC_TR_LISEM.insert(0, [0]*(nb_unit + 1))
+    CALC_PROD_INTERNE.insert(0, [0]*nb_unit)
+    MASSE_SED.insert(0, [0]*nb_unit)
+    CALC_TC_LISEM.insert(0, [0]*nb_unit)
 
     # % ******   CALCUL DE PARAMETRES INTERMEDIAIRES CONSTANTS POUR PRODUCTION INTERNE EN SEDIMENTS   *****
     # % fonction f_MHYDAS_UH_Flow_LISEM_Erosion
     # % Calcul des coefficients expérimentaux pour l'obtention de la capacité de transport
-    cc = ((local_parameters_as_dict[variablesdefinition.d50_sed]*1000000 + 5) /0.32)**(-0.6)#; % ATTENTION : équation valide pour un diamètre de particules > 32 µm
-    dd = ((local_parameters_as_dict[variablesdefinition.d50_sed]*1000000 + 5) /300)**0.25#;  % ATTENTION : équation valide pour un diamètre de particules > 32 µm
+    cc = math.pow(((local_parameters_as_dict[variablesdefinition.d50_sed]*1000000 + 5) /0.32), -0.6)#; % ATTENTION : équation valide pour un diamètre de particules > 32 µm
+    dd = math.pow(((local_parameters_as_dict[variablesdefinition.d50_sed]*1000000 + 5) /300), 0.25)#;  % ATTENTION : équation valide pour un diamètre de particules > 32 µm
     # % Calcul du facteur d'efficacité du détachement lié à la cohésion du sol (Raws and Govers, 1988)
     # %YY = 1/(0.89+0.56.*local_parameters_as_dict[variablesdefinition.coh]);
     betha = 0.79*math.exp(-0.85*local_parameters_as_dict[variablesdefinition.coh])
-
+    #print(len(Q_CALC_UNIT), SPLASH_CALC_UNIT_LISEM)
     for j in range(1, len(Q_CALC_UNIT)):
-        for i in range(local_parameters_as_dict[variablesdefinition.nb_unit]):#% garde fou : verifier Nb_unit > 1
+        CALC_VOL_TR_LISEM.insert(j, [])
+        CALC_TC_LISEM.insert(j, [])
+        CALC_CONC_TR_LISEM.insert(j, [])
+        CALC_PROD_INTERNE.insert(j, [])
+        MASSE_SED.insert(j, [])
+        CALC_TC_LISEM.insert(j, [])
+        for i in range(nb_unit):#% garde fou : verifier Nb_unit > 1
+            #CALC_VOL_TR_LISEM.insert(i, [])
             #%*********************     BILAN  VOLUME D'EAU (m3)   *********************
             if Q_CALC_UNIT[j][i] < 0.0000001 or H_CALC_UNIT[j][i] == 0:
                 Volume_Tr_LISEM = 0
             else:
                 #% Apport d'eau latéral par ruissellement sur zone diffuse en m3/pas de temps --> Q_entree_unit
-                if i == 1:
-                    Volume_Splash = 0.5*net_precipitation[j-1] * unit_length*unit_width
+                if i == 0:
+                    Volume_Splash = 0.5 * net_precipitation[variablesdefinition.precipitation_label_custom][j-1] * unit_length*unit_width
                     Volume_Amont = 0  # ;
                 else:
-                    Volume_Splash = net_precipitation[j-1] * unit_length*unit_width
+                    Volume_Splash = net_precipitation[variablesdefinition.precipitation_label_custom][j-1] * unit_length * unit_width
                     Volume_Amont = Q_CALC_SORTIE[j-1][i-1] * global_parameters_as_dict[variablesdefinition.dt]
-                #end
-                 #% Apport d'eau à l'amont du tronçon (débit de sortie du tronçon précédent) en m3/pas de temps --> Q_CALC_SORTIE (t-1,Tr-1)
+
+                #% Apport d'eau à l'amont du tronçon (débit de sortie du tronçon précédent) en m3/pas de temps --> Q_CALC_SORTIE (t-1,Tr-1)
                 # if i == 1:
                 #    Volume_Amont = 0#;
                 # else:
                 #    Volume_Amont = Q_CALC_SORTIE(j-1,i-1)*global_parameters_as_dict[variablesdefinition.dt]#; %
                 # #end
-                 #% Sortie d'eau à l'aval du tronçon en m3/pas de temps --> Q_CALC_SORTIE (t-1,Tr)
+                #% Sortie d'eau à l'aval du tronçon en m3/pas de temps --> Q_CALC_SORTIE (t-1,Tr)
                 Volume_Aval = Q_CALC_SORTIE[j-1][i]*global_parameters_as_dict[variablesdefinition.dt]#;
-                 #% volume d'eau dans le tronçon Tr au pas de temps précédent en m3
+                #% volume d'eau dans le tronçon Tr au pas de temps précédent en m3
                 Volume_antecedent = CALC_VOL_TR_LISEM[j-1][i]#;
                 #% ECRITURE DU BILAN
-                Volume_Tr_LISEM = Volume_antecedent  + Volume_Splash + Volume_Amont - Volume_Aval#;
+                Volume_Tr_LISEM = Volume_antecedent + Volume_Splash + Volume_Amont - Volume_Aval#;
                 if Volume_Tr_LISEM < 0:
                     Volume_Tr_LISEM = 0
 
             #% Ecriture Matrice (stockage)
+            #print("CALC_VOL_TR_LISEM",i, j, CALC_VOL_TR_LISEM)
+            #CALC_VOL_TR_LISEM[i]
+
             CALC_VOL_TR_LISEM[j].insert(i, Volume_Tr_LISEM)
 
             #%**********************  BILAN DE MASSE  EN KG/dt   ***********************
@@ -251,30 +262,32 @@ def sediments_concentration_per_unit(SPLASH_CALC_UNIT_LISEM, H_CALC_UNIT,  V_CAL
                  CALC_TC_LISEM[j].insert(i, 0)#;
                  Prod_interne = 0#;
             else:
-                #% Masse de sédiments dans le tronçon Tr au pas de temps précédent en Kg
-                 Masse_antecedent = CALC_CONC_TR_LISEM[j-1][i]*CALC_VOL_TR_LISEM[j-1][i]#;
-                #% Apport de sédiments par splash (au noeud amont) en Kg/pas de temps --> Q_entree_unit
+                 #% Masse de sédiments dans le tronçon Tr au pas de temps précédent en Kg
+                 Masse_antecedent = CALC_CONC_TR_LISEM[j-1][i] * CALC_VOL_TR_LISEM[j-1][i]#;
+                 #% Apport de sédiments par splash (au noeud amont) en Kg/pas de temps --> Q_entree_unit
+                 print(i, SPLASH_CALC_UNIT_LISEM[j-1])
                  Apport_Splash = SPLASH_CALC_UNIT_LISEM[j-1][i]#;
-                #% Apport de sédiments à l'amont du tronçon (débit de sortie du tronçon précédent) en Kg/pas de temps --> Q_CALC_SORTIE (t-1,Tr-1)
-                 if i == 1:
+                 #% Apport de sédiments à l'amont du tronçon (débit de sortie du tronçon précédent) en Kg/pas de temps --> Q_CALC_SORTIE (t-1,Tr-1)
+                 if i == 0:
                      Apport_Amont = 0#;
                  else:
-                     Apport_Amont = CALC_CONC_TR_LISEM[j-1][i-1]*Q_CALC_SORTIE[j-1][i-1] * global_parameters_as_dict[variablesdefinition.dt]#; %
-                 #end
-                #% Sortie de sédiments à l'aval du tronçon en Kg/pas de temps --> Q_CALC_SORTIE (t-1,Tr)
-                 Perte_Aval = CALC_CONC_TR_LISEM[j-1][i]*Q_CALC_SORTIE[j-1][i] * global_parameters_as_dict[variablesdefinition.dt]#;
-                #% Production interne au tronçon : Dépôt OU Arrachement par le ruissellement(en Kg/pas de temps) --> Q_CALC_UNIT
+                     Apport_Amont = CALC_CONC_TR_LISEM[j-1][i-1] * Q_CALC_SORTIE[j-1][i-1] * \
+                                    global_parameters_as_dict[variablesdefinition.dt]#; %
+                 #% Sortie de sédiments à l'aval du tronçon en Kg/pas de temps --> Q_CALC_SORTIE (t-1,Tr)
+                 Perte_Aval = CALC_CONC_TR_LISEM[j-1][i] * Q_CALC_SORTIE[j-1][i] * \
+                              global_parameters_as_dict[variablesdefinition.dt]#;
+                 #% Production interne au tronçon : Dépôt OU Arrachement par le ruissellement(en Kg/pas de temps) --> Q_CALC_UNIT
                  Prod_interne,tc_lisem = sediment_production_per_time_interval(Masse_antecedent, Apport_Splash,
                                                                                Apport_Amont, Perte_Aval,
-                                                                               CALC_CONC_TR_LISEM[j-1][i],
-                                                                               unit_slope[i], V_CALC_UNIT[j-1][i],
+                                                                               CALC_CONC_TR_LISEM[i][j-1],
+                                                                               unit_slope[i], V_CALC_UNIT[i][j-1],
                                                                                unit_length, cc, dd, betha,
                                                                                global_parameters_as_dict,
                                                                                local_parameters_as_dict)#;
-                #%  Prod_interne = 0;
-                #% TC = 0;
+                 #%  Prod_interne = 0;
+                 #% TC = 0;
                  CALC_TC_LISEM[j][i] = tc_lisem#;
-                #% ECRITURE DU BILAN
+                 #% ECRITURE DU BILAN
                  Masse_Tr_LISEM = Masse_antecedent + Prod_interne + Apport_Splash + Apport_Amont - Perte_Aval#;
                     #%if Masse_Tr_LISEM < 0 ;
                     #%   Masse_Tr_LISEM = 0;
@@ -283,26 +296,28 @@ def sediments_concentration_per_unit(SPLASH_CALC_UNIT_LISEM, H_CALC_UNIT,  V_CAL
                      Conc_Tr_LISEM = 0#;
                  else:
                      Conc_Tr_LISEM = Masse_Tr_LISEM / CALC_VOL_TR_LISEM[j][i]#;
-                #end
-            #end
+
             #% Ecriture Matrice (stockage)
             CALC_CONC_TR_LISEM[j].insert(i, Conc_Tr_LISEM)#;
             CALC_PROD_INTERNE[j].insert(i, Prod_interne)#;
             MASSE_SED[j].insert(i, Masse_Tr_LISEM)#;
             MASSE_SED[j].insert(i, Masse_Tr_LISEM)#;
-        #end
+
         #% calcul de la concentration sortant du dernier noeud (colonne Nb_unit+1)
-        if Q_CALC_UNIT[j][local_parameters_as_dict[variablesdefinition.nb_unit]+1] < 0.0000001 or Q_CALC_SORTIE[j][local_parameters_as_dict[variablesdefinition.nb_unit]] < 0.00000001:
+        if Q_CALC_UNIT[j][nb_unit] < 0.0000001 or Q_CALC_SORTIE[j][nb_unit-1] < 0.00000001:
             Conc_Tr_LISEM_aval = 0#;
             Masse_Tr_LISEM_aval = 0#;
         else:
             #% conservation de la matière (flux additif)
-            Conc_Tr_LISEM_aval = (CALC_CONC_TR_LISEM[j][local_parameters_as_dict[variablesdefinition.nb_unit]]*Q_CALC_SORTIE[j][local_parameters_as_dict[variablesdefinition.nb_unit]]+(SPLASH_CALC_UNIT_LISEM[j-1][local_parameters_as_dict[variablesdefinition.nb_unit]+1]/global_parameters_as_dict[variablesdefinition.dt]))/Q_CALC_UNIT[j][local_parameters_as_dict[variablesdefinition.nb_unit]+1]#;
-            Masse_Tr_LISEM_aval = Conc_Tr_LISEM_aval * Q_CALC_UNIT[j][local_parameters_as_dict[variablesdefinition.nb_unit]+1]*global_parameters_as_dict[variablesdefinition.dt]
+            Conc_Tr_LISEM_aval = (CALC_CONC_TR_LISEM[j][nb_unit-1]*Q_CALC_SORTIE[j][nb_unit-1] + \
+                                  (SPLASH_CALC_UNIT_LISEM[j-1][nb_unit]/\
+                                   global_parameters_as_dict[variablesdefinition.dt]))/Q_CALC_UNIT[j][nb_unit]#;
+            Masse_Tr_LISEM_aval = Conc_Tr_LISEM_aval * Q_CALC_UNIT[j][nb_unit] * \
+                                  global_parameters_as_dict[variablesdefinition.dt]
 
             #% Ecriture Matrice (stockage du dernier noeud  )
-            CALC_CONC_TR_LISEM[j].insert(local_parameters_as_dict[variablesdefinition.nb_unit]+1, Conc_Tr_LISEM_aval)#;
-            MASSE_SED[j].insert(local_parameters_as_dict[variablesdefinition.nb_unit]+1, Masse_Tr_LISEM_aval)#;
+            CALC_CONC_TR_LISEM[j].insert(nb_unit, Conc_Tr_LISEM_aval)#;
+            MASSE_SED[j].insert(nb_unit, Masse_Tr_LISEM_aval)#;
     return CALC_CONC_TR_LISEM, CALC_PROD_INTERNE, MASSE_SED, CALC_TC_LISEM, CALC_VOL_TR_LISEM
 
 

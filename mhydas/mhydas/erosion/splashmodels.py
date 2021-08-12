@@ -1,3 +1,5 @@
+import numpy as np
+
 from mhydas.mhydas.utilities import variablesdefinition
 
 def mean_weight_diameter(precipitation, inflow_unit, Q_CALC_UNIT, unit_width, unit_length, SDR_ajust_Q,
@@ -43,23 +45,25 @@ def mean_weight_diameter(precipitation, inflow_unit, Q_CALC_UNIT, unit_width, un
     intermed_Conc_Splash = []
     for i in range(int(local_param_as_dict[variablesdefinition.nb_unit])):# % garde fou : verifier Nb_unit > 1
         for j in range(len(precipitation)):
-            if precipitation[variablesdefinition.precipitation_label][j] == 0 or Q_CALC_UNIT[i][j] == 0: #% Conditions: pluie et débit sur chaque unité élémentaire non nuls
+            if precipitation[variablesdefinition.precipitation_label][j] == 0 or Q_CALC_UNIT[j][i] == 0: #% Conditions: pluie et débit sur chaque unité élémentaire non nuls
                 Splash_Unit_LISEM.insert(j, 0)
             else:
                 #% Calcul du splash en Kg/pas de temps
-                Splash_direct.insert(j, (((2.1e-4/local_param_as_dict[variablesdefinition.mwd]*kteste)*KE_nu[j]*
-                                      (precipitation[variablesdefinition.precipitation_label_custom][j]))*(
-                                        (1-local_param_as_dict[
-                                            variablesdefinition.surf_couvert
-                                        ]
-                                         )*unit_width*unit_length)
-                                     )
-                                  )
-                Splash_indirect.insert(j, ((((2.1e-4/local_param_as_dict[variablesdefinition.mwd])*KE_couv))*
-                                       (precipitation[variablesdefinition.precipitation_label_custom][j]))*(
-                        local_param_as_dict[variablesdefinition.surf_couvert]*unit_width*unit_length))
-                print(Splash_direct, Splash_indirect, SDR_ajust_Q)
-                Splash_Unit_LISEM.insert(j, (Splash_direct[j] + Splash_indirect[j])*SDR_ajust_Q[j])
+                _splash_direct = (2.1e-4/local_param_as_dict[variablesdefinition.mwd]) * kteste*KE_nu[j] * \
+                                 precipitation[variablesdefinition.precipitation_label_custom][j] * \
+                                        (1-local_param_as_dict[variablesdefinition.surf_couvert]) * \
+                                        unit_width*unit_length
+
+
+                Splash_direct.insert(j, _splash_direct)
+                _splash_indirect = (2.1e-4/local_param_as_dict[variablesdefinition.mwd])*KE_couv * \
+                                       precipitation[variablesdefinition.precipitation_label_custom][j] * \
+                        local_param_as_dict[variablesdefinition.surf_couvert]*unit_width*unit_length
+
+
+                Splash_indirect.insert(j, _splash_indirect)
+                #print(i, j, Splash_direct, Splash_indirect)
+                Splash_Unit_LISEM.insert(j, (_splash_direct + _splash_indirect) * SDR_ajust_Q[j])
 
                 #% Calcul des concentrations issues du splash
             if inflow_unit[variablesdefinition.streamflow_label_custom][j] == 0:
@@ -70,14 +74,17 @@ def mean_weight_diameter(precipitation, inflow_unit, Q_CALC_UNIT, unit_width, un
                                 global_param_as_dict[variablesdefinition.dt])
                                )
        #% Ecriture matrices
-        if i == 1:
-            SPLASH_CALC_UNIT_LISEM.insert(i, 0.5*Splash_Unit_LISEM)
+        print("Splash_Unit_LISEM", len(Splash_Unit_LISEM), Splash_Unit_LISEM)
+        if i == 0:
+            SPLASH_CALC_UNIT_LISEM.insert(i, list(map(lambda x: x*0.5, Splash_Unit_LISEM)))
         else:
-            SPLASH_CALC_UNIT_LISEM.insert(i, 0.5*Splash_Unit_LISEM+0.5*MEM)
+            SPLASH_CALC_UNIT_LISEM.insert(i, list(map(lambda x: x*0.5, np.add(Splash_Unit_LISEM, MEM))))
 
         MEM = Splash_Unit_LISEM
         CONC_SPLASH.insert(i, intermed_Conc_Splash)
-
-    SPLASH_CALC_UNIT_LISEM.insert(local_param_as_dict[variablesdefinition.nb_unit] + 1, 0.5*Splash_Unit_LISEM)
-    CONC_SPLASH.insert(local_param_as_dict[variablesdefinition.nb_unit]+1, intermed_Conc_Splash)
+    #print(len(list(map(lambda x: x*0.5, Splash_Unit_LISEM))))
+    SPLASH_CALC_UNIT_LISEM.insert(int(local_param_as_dict[variablesdefinition.nb_unit]),
+                                  list(map(lambda x: x*0.5, Splash_Unit_LISEM)))
+    CONC_SPLASH.insert(int(local_param_as_dict[variablesdefinition.nb_unit]), intermed_Conc_Splash)
+    SPLASH_CALC_UNIT_LISEM = np.array(SPLASH_CALC_UNIT_LISEM).T
     return SPLASH_CALC_UNIT_LISEM, CONC_SPLASH, Splash_Unit_LISEM, Splash_direct, Splash_indirect
