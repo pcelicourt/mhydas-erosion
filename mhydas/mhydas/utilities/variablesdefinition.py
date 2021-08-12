@@ -60,12 +60,13 @@ hour = "hour"
 minute = "minute"
 second = "second"
 precipitation_label = "precip_mm_h"
-precipitation_label_custom = "precip_m_s"
+precipitation_label_custom = "precip_mm_s"
 datetime = "Datetime"
 streamflow_label = "flow_L_s"
 streamflow_label_custom = "flow_m3_s"
-concentration_label= 'concentration_L_s'
-infiltration_rate = "infiltration_rate"
+concentration_label = 'concentration_L_s'
+infiltration_rate_label_custom = "infiltration_mm_s"
 time_step = "time_step"
 net_precipitation = "net_precipitation"
 timestamp = "timestamp"
+

@@ -1,5 +1,6 @@
 import pandas as pd
 from datetime import datetime
+import matplotlib
 
 from mhydas.mhydas.utilities import variablesdefinition
 
@@ -20,7 +21,7 @@ def disaggregate_date_time_from_minute_to_seconds(file_path, delimiter, dt):
         data = pd.read_csv(file_path, sep=delimiter, skiprows=2)
         for index, row in data.iterrows():
             for number_of_row in range(number_of_aggregates_per_minute):
-                values = [datetime.timestamp(datetime(*(row.values[:5]), int(number_of_row * dt))),
+                values = [datetime(*(row.values[:5]), int(number_of_row * dt)),
                           row.values[6], row.values[6] * 0.001 * dt / 3600
                           ]
                 precipitation_data = precipitation_data.append(dict(zip(columns, values)), ignore_index=True)

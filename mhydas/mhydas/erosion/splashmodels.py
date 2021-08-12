@@ -1,6 +1,7 @@
 from mhydas.mhydas.utilities import variablesdefinition
 
-def mean_weight_diameter(precipitation, inflow_unit, Q_CALC_UNIT, unit_width, unit_length, SDR_ajust_Q, local_param_as_dict, global_param_as_dict,KE_nu, KE_couv, kteste):
+def mean_weight_diameter(precipitation, inflow_unit, Q_CALC_UNIT, unit_width, unit_length, SDR_ajust_Q,
+                          global_param_as_dict,local_param_as_dict,KE_nu, KE_couv, kteste):
     # function [SPLASH_CALC_UNIT_LISEM, CONC_SPLASH, Splash_Unit_LISEM, Splash_direct, Splash_indirect] = f_MHYDAS_UH_Splash_MWD_Erosion(precipitation, inflow_unit, Q_CALC_UNIT, unit_width, unit_length, SDR_ajust_Q, PARAM,KE_nu, KE_couv, kteste)
     #
     # % Calcul de la production de sédiments par splash arrivant aux tronçons de rigole d'UN MOTIF à chaque pas de temps avec les équations de LISEM (g/pas de temps)
@@ -40,9 +41,9 @@ def mean_weight_diameter(precipitation, inflow_unit, Q_CALC_UNIT, unit_width, un
     SPLASH_CALC_UNIT_LISEM = []
     CONC_SPLASH = []
     intermed_Conc_Splash = []
-    for i in range(local_param_as_dict[variablesdefinition.nb_unit]):# % garde fou : verifier Nb_unit > 1
+    for i in range(int(local_param_as_dict[variablesdefinition.nb_unit])):# % garde fou : verifier Nb_unit > 1
         for j in range(len(precipitation)):
-            if precipitation[variablesdefinition.precipitation_label][j] == 0 or Q_CALC_UNIT[j][i] == 0: #% Conditions: pluie et débit sur chaque unité élémentaire non nuls
+            if precipitation[variablesdefinition.precipitation_label][j] == 0 or Q_CALC_UNIT[i][j] == 0: #% Conditions: pluie et débit sur chaque unité élémentaire non nuls
                 Splash_Unit_LISEM.insert(j, 0)
             else:
                 #% Calcul du splash en Kg/pas de temps
@@ -57,15 +58,16 @@ def mean_weight_diameter(precipitation, inflow_unit, Q_CALC_UNIT, unit_width, un
                 Splash_indirect.insert(j, ((((2.1e-4/local_param_as_dict[variablesdefinition.mwd])*KE_couv))*
                                        (precipitation[variablesdefinition.precipitation_label_custom][j]))*(
                         local_param_as_dict[variablesdefinition.surf_couvert]*unit_width*unit_length))
-
+                print(Splash_direct, Splash_indirect, SDR_ajust_Q)
                 Splash_Unit_LISEM.insert(j, (Splash_direct[j] + Splash_indirect[j])*SDR_ajust_Q[j])
 
                 #% Calcul des concentrations issues du splash
-            if inflow_unit[j] == 0:
+            if inflow_unit[variablesdefinition.streamflow_label_custom][j] == 0:
                 intermed_Conc_Splash.insert(j, 0)
             else:
                 intermed_Conc_Splash.insert(j, Splash_Unit_LISEM[j]/
-                               (inflow_unit[j]*global_param_as_dict[variablesdefinition.dt])
+                               (inflow_unit[variablesdefinition.streamflow_label_custom][j]*
+                                global_param_as_dict[variablesdefinition.dt])
                                )
        #% Ecriture matrices
         if i == 1:

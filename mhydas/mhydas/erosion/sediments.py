@@ -6,7 +6,7 @@ import numpy as np
 from mhydas.mhydas.utilities import variablesdefinition
 
 
-def adjusted_sediment_discharge_ratio(global_parameters_as_dict, local_parameters_as_dict, net_rainfall_as_array):
+def adjusted_sediment_discharge_ratio(global_parameters_as_dict, local_parameters_as_dict, net_rainfall):
     # function [SDR_ajust_Q] = f_MHYDAS_UH_SDR_ajust_Q (net_precipitation, PARAM)
     #
     # % Calcul du SDR de chaque tronçon en fonction du débit issu du ruissellement sur la zone inter-rigole.
@@ -27,9 +27,9 @@ def adjusted_sediment_discharge_ratio(global_parameters_as_dict, local_parameter
 
     adjusted_sediment_discharge_ratio = list(map(lambda x: local_parameters_as_dict[variablesdefinition.sdr_max] *
                                             (1-math.exp(-((2.5*3600000*x /
-                                                         global_parameters_as_dict[variablesdefinition.dt]) /
+                                                         int(global_parameters_as_dict[variablesdefinition.dt])) /
                                             local_parameters_as_dict[variablesdefinition.ruissel_max]))),
-                      net_rainfall_as_array))
+                      net_rainfall[variablesdefinition.precipitation_label_custom]))
     # ((PARAM.Larg_UH/local_parameters_as_dict[variablesdefinition.nb_motifs])/local_parameters_as_dict[variablesdefinition.larg_rill]);
     # % Colocado um fator de distancia entre o rigole e a zona interrill mesmo que WEPP Silvio 20/03/2007
     return adjusted_sediment_discharge_ratio

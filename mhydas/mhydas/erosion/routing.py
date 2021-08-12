@@ -15,40 +15,72 @@ def hayamimodel(parameters_as_dict, long_bief, celerite_bief):
     noyeau = []
     var1 = (teta * zed / 3.1416) ** 0.5
     if teta > 0.1 * parameters_as_dict[variablesdefinition.dt]:
-        for i in range(parameters_as_dict[variablesdefinition.duree_max_noyeau]):
+        for i in range(1, int(parameters_as_dict[variablesdefinition.duree_max_noyau]) + 1):
             t = (i - 0.5) * parameters_as_dict[variablesdefinition.dt]
             var2 = np.exp(zed * (2 - (t / teta) - (teta / t)))
-            var3 = t ** 1.5
+            var3 = math.pow(t, 1.5)
             noyeau.append(var1 * var2 / var3)
+
     else:
         noyeau[0] = 0.5 / parameters_as_dict[variablesdefinition.dt]
         noyeau[1] = 0.5 / parameters_as_dict[variablesdefinition.dt]
-        for i in range(2, parameters_as_dict[variablesdefinition.duree_max_noyeau]):
+        for i in range(2, parameters_as_dict[variablesdefinition.duree_max_noyau]):
             noyeau.append(0)
     volume = sum(noyeau) * parameters_as_dict[variablesdefinition.dt]
-    noyeau = noyeau * (1 / volume)
+
+    noyeau = list(map(lambda x: x / volume, noyeau))
     return noyeau
     #volume_corrige = sum(noyeau) * parameters_as_dict[variablesdefinition.dt]
 
 
-def hayamitransfer(inflow, hydrologic_unit, parameters_as_dict):
+def hayamitransfer(inflow, hydrologic_unit, dt):
+    #  % Transfert par la méthode de l'Onde diffusante résolue par la méthode analytique d'Hayami.
+    # % Auteurs: Gumiere.,S.J., D. Raclot & G. Davy
+    # % Version : 2008
+    # % Moussa R, Bocquillon C. 1996. Criteria for the choice of flood-routing methods in natural channels. Journal of Hydrology 186(1-4) : 1-30.
+    # %
+    # % pn      : pluie nette (mm / pas de temps)
+    # % Surface : suface du bassin en m2
+    # % Q_cal   : débit de sortie (l/s)
+    # % dt      : pas de temps (s) --> PARAM.dt
+    #
+    # Nb_pn=length(Q_entree);
+    # Nb_HU=length(HU);
+    #
+    # %_______________________________________________
+    #
+    # for ii = 1 : Nb_pn
+    #     Q_sortie_cal(ii,1) = 0;
+    #     Nb_pas_calcul = Nb_HU;
+    #     if ii < Nb_HU;
+    # 	    Nb_pas_calcul = ii;
+    #     end
+    #     for jj=1:Nb_pas_calcul
+    #         Q_sortie_cal(ii,1) = Q_sortie_cal (ii,1) + (HU(jj) * Q_entree(ii-jj+1) * PARAM.dt);
+    #         if Q_sortie_cal(ii,1)<0.000001
+    #            Q_sortie_cal(ii,1) = 0;
+    #         end
+    #    end
+    # end
+    #print(inflow)
     net_rainfall_length = len(inflow)
     number_of_hydrologic_unit = len(hydrologic_unit)
     outflow = []
     for i in range(net_rainfall_length):
-        outflow.append(0)
+        outflow.insert(i, 0)
         number_of_calculation_steps = number_of_hydrologic_unit
         if i < number_of_hydrologic_unit:
             number_of_calculation_steps = i
         for j in range(number_of_calculation_steps):
-            outflow.append(outflow[i] + (hydrologic_unit[j] * inflow[i-j+1] *
-                                         parameters_as_dict[variablesdefinition.dt])
-                           )
+            outflow[i] += hydrologic_unit[j] * inflow[i-j] * dt
+
             if outflow[i] < 0.000001:
                 outflow[i] = 0
+    #print(len(outflow), net_rainfall_length)
     return outflow
 
-def crancknicholsontransfer(inflow, celerity, sigma, surface_unit_length, time_step, rainfall_series_length, number_of_element_per_surface_unit, number_of_time_steps, number_of_virtual_steps):
+def crancknicholsontransfer(inflow, celerity, sigma, surface_unit_length, time_step, rainfall_series_length,
+                            number_of_element_per_surface_unit, number_of_time_steps, number_of_virtual_steps):
     # Q_sortie_unit = f_MHYDAS_UH_Transfert_CNX (inflow, celerite_bief, PARAM.sigma, Long_unit, PARAM.dt, length(Pluie.time), PARAM.nb_dx, PARAM.nb_dt, PARAM.number_of_virtual_steps);
     #function Q_cal = f_MHYDAS_UH_Transfert_CNX (Q_entree, celerite, sigma, longueur, dt_mes, n, nn1, nt1, nb_pas_fictifs)
     #% number_of_element_per_surface_unit  : Nombre de pas d'espace dx

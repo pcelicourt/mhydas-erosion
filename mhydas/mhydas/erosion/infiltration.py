@@ -41,7 +41,7 @@ def morelseytouxmethod(precipitation, storage_and_suction_factor, parameters_as_
         for i in range(precipitation_data_length):
             time_steps.append(parameters_as_dict[variablesdefinition.dt] * i)
         dw = np.zeros(precipitation_data_length)
-        print("cond_sat", cond_sat)
+        #print("cond_sat", cond_sat)
         if cond_sat == 0:
             # for i in range(precipitation_data_length):
             #     time_steps.append(i * parameters_as_dict[variablesdefinition.dt])
@@ -94,9 +94,9 @@ def morelseytouxmethod(precipitation, storage_and_suction_factor, parameters_as_
         #precipitation["infiltration_rate"] = \
             #precipitation[variablesdefinition.precipitation_label_custom]-precipitation["net_precipitation"]
         infiltration = pd.DataFrame({variablesdefinition.timestamp: precipitation[variablesdefinition.timestamp].values,
-                                     variablesdefinition.infiltration_rate: infiltration_capacity})
+                                     variablesdefinition.infiltration_rate_label_custom: infiltration_capacity})
         net_precipitation = pd.DataFrame({variablesdefinition.timestamp: precipitation[variablesdefinition.timestamp].values,
-                                     variablesdefinition.net_precipitation: net_precipitation})
+                                     variablesdefinition.precipitation_label_custom: net_precipitation})
         return time_steps, infiltration, net_precipitation#precipitation#time_steps, infiltration_capacity, net_precipitation
 
 def philipmethod():

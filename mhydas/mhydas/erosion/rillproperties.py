@@ -22,14 +22,15 @@ def water_depth(inflow, rugo_strickler, rill_width, unit_slope, seuil_conv):
     # % seuil_conv      : seuil de convergence (en m) --> PARAM.Seuil_Conv
 
     _lambda = inflow/(rugo_strickler * rill_width * math.sqrt(unit_slope)) #; % constante
-    x = _lambda**(3/5) #;% valeur initiale de la hauteur d'eau
+    x = math.pow(_lambda, 3/5) #;% valeur initiale de la hauteur d'eau
     delta = 1 + seuil_conv  #;% valeur initiale du delta (doit etre > à seuil_conv)
+    #print(delta, seuil_conv, _lambda * math.pow(1/x + 2/rill_width, 2/3) - x)
     while delta > seuil_conv:
-        #aaa = x#;
-        f = _lambda*((1/x)+(2/rill_width))**(2/3) - x
-        df = ((-2/3*_lambda)*(1/(x**2))*((1/x)+(2/rill_width))**(-1/3))-1
+        aaa = x
+        f = _lambda * math.pow(1/x + 2/rill_width, 2/3) - x
+        df = -2/3 * _lambda * (1/math.pow(x, 2)) * math.pow(1/x + 2/rill_width, -1/3)-1
         x = x - f/df
-        #delta = abs(x - aaa)
+        delta = abs(x - aaa)
     if x < 0.000001:
         hauteur_newton = 0
     else:
@@ -38,10 +39,10 @@ def water_depth(inflow, rugo_strickler, rill_width, unit_slope, seuil_conv):
 
 
 def water_speed(inflow, section):
-    velocity = []
-    for i in range(len(section)):
-        if section[i] == 0:
-           velocity.insert(i, 0)
-        else:
-           velocity.insert(i, inflow[i] / section[i])
+    #velocity = []
+    #for i in range(len(section)):
+    if section == 0:
+       velocity = 0
+    else:
+       velocity = inflow / section
     return velocity

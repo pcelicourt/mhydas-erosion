@@ -14,6 +14,7 @@ from mhydas.mhydas.erosion import routing, precipitation, rillproperties, kineti
 
 default_data_file_dir = "../data/"
 
+
 #https://base-n.de/matlab/code_beautifier.html
 class Model:
     def __init__(self, data_directory=None, main_config_file_name=None):
@@ -27,7 +28,7 @@ class Model:
         self.default_specific_param_config_file_name = "local_parameters.ini"
         self.parameters = {}
         self.kteste = 1
-        self.net_precipitation = []
+        self.net_precipitation = pd.DataFrame()
 
         if main_config_file_name:
             _main_config_file_path = os.path.join(self.data_directory,
@@ -106,7 +107,7 @@ class Model:
                                         sep="\t", skiprows=2
                            )
         for index, row in data.iterrows():
-            values = [datetime.timestamp(datetime(*(row.values[:6]))), row.values[6], row.values[6] * 0.001]
+            values = [datetime(*(row.values[:6])), row.values[6], row.values[6] * 0.001]
             streamflow_data = streamflow_data.append(dict(zip(columns, values)), ignore_index=True)
         return streamflow_data
 
@@ -117,7 +118,7 @@ class Model:
                                         sep="\t"
                            )
         for index, row in data.iterrows():
-            values = [datetime.timestamp(datetime(*list(map(int, row.values[:5])))), row.values[6]]
+            values = [datetime(*list(map(int, row.values[:5]))), row.values[6]]
             mes_concentration_data = mes_concentration_data.append(dict(zip(columns, values)), ignore_index=True)
         return mes_concentration_data
 
@@ -147,7 +148,12 @@ class Model:
         unit_width = _local_parameters[variablesdefinition.larg_uh]
         if not len(self.net_precipitation):
             self.get_infiltration_data()
-        inflow_unit = self.net_precipitation * (unit_length * unit_width /_global_parameters[variablesdefinition.dt])#; % Débit d'entrée latéral (m3/s)
+        inflow_unit = pd.DataFrame({variablesdefinition.timestamp: self.net_precipitation[variablesdefinition.timestamp]
+                                       , variablesdefinition.streamflow_label_custom:
+                                       self.net_precipitation[variablesdefinition.precipitation_label_custom] * \
+                                                 unit_length * unit_width /_global_parameters[variablesdefinition.dt]
+                                    }
+                                    )#; % Débit d'entrée latéral (m3/s)
         return inflow_unit
 
     def get_inflow_from_net_precipitation(self):
@@ -159,11 +165,12 @@ class Model:
         #              _local_parameters[variablesdefinition.dist_3]) / _local_parameters[variablesdefinition.nb_unit]#; % Longueur de l'unité élémentaire
         # unit_width = _local_parameters[variablesdefinition.larg_uh] / _local_parameters[variablesdefinition.nb_motifs]#; % Largeur de l'unité élémentaire (= largeur motif élémentaire)
         unit_slope = slopes.vectorize(_local_parameters)
-        unit_celerity = _global_parameters[variablesdefinition.celerite] * unit_slope / mean(unit_slope)
-        if not self.net_precipitation:
+        unit_celerity = list(map(lambda x: _global_parameters[variablesdefinition.celerite] * x / mean(unit_slope), unit_slope ))
+        if self.net_precipitation.empty:
             self.get_infiltration_data()
         #compute inflow_unit as a separate method
         inflow_unit = self.get_inflow_unit()#self.net_precipitation * (unit_length * unit_width /_global_parameters[variablesdefinition.dt])#; % Débit d'entrée latéral (m3/s)
+        #print("inflow unit", inflow_unit.head())
         outflow_unit = []
         if _global_parameters[variablesdefinition.code_transfert] == 1:
             print('2. MHYDAS_UH : Fonction de transfert par le modèle de l''onde diffusante')
@@ -177,17 +184,18 @@ class Model:
         V_CALC_UNIT = []
         #% Débit (m3/s) sortant du tronçon considéré (débit d'entrée, Q_entree, transféré)
         Q_CALC_SORTIE = []
-
-        for i in range(_local_parameters[variablesdefinition.nb_unit]):#% garde fou : verifier Nb_unit > 1
+        inflow = []
+        for i in range(int(_local_parameters[variablesdefinition.nb_unit])):#% garde fou : verifier Nb_unit > 1
             celerite_bief = unit_celerity[i]
             hayami_core = routing.hayamimodel(_global_parameters,unit_length,celerite_bief)#; % Calcul du Noyau d'Hayami
             #% Calcul du débit entrant dans un tronçon : entrée latérale (ruissellement interrill) + sortie du tronçon amont
-            if i == 1:
-               inflow =  0.5 * inflow_unit
+            if i == 0:
+               inflow = list(map(lambda x: 0.5 * x, inflow_unit[variablesdefinition.streamflow_label_custom]))
             else:
-               inflow =  inflow_unit + outflow_unit
+                inflow = np.add(list(inflow_unit[variablesdefinition.streamflow_label_custom].values),  outflow_unit)
             H_entree = []
             V_entree = []
+
             #% Calcul des hauteurs (m) et vitesses (m/s) dans la rigole en entrée d'unité élémentaire
             for j in range(len(inflow)):
                 if inflow[j] == 0:
@@ -197,8 +205,7 @@ class Model:
                     rill_width = _local_parameters[variablesdefinition.larg_rill]
                     _h_entree = rillproperties.water_depth(
                         inflow[j], _local_parameters[variablesdefinition.rugo_strickler],
-                        rill_width,
-                        unit_slope[i], _local_parameters[variablesdefinition.seuil_conv]
+                        rill_width, unit_slope[i], _local_parameters[variablesdefinition.seuil_conv]
                     )
                     rill_section = rill_width * _h_entree
                     _v_entree = rillproperties.water_speed(inflow[j], rill_section)
@@ -232,9 +239,12 @@ class Model:
             Q_CALC_SORTIE.insert(i, outflow_unit)
 
         #% Débit (m3/s) sortant d'un motif
-        self.Q_sortie_motif = (outflow_unit + 0.5*inflow_unit)
+        #print("Outflow", outflow_unit, inflow_unit[variablesdefinition.streamflow_label_custom].values)
+        self.Q_sortie_motif = np.add(outflow_unit,
+                                     0.5 * inflow_unit[variablesdefinition.streamflow_label_custom].values)
         #% Débit (m3/s) sortant de la parcelle
-        self.Q_sortie_parcelle = (outflow_unit + 0.5*inflow_unit)* _local_parameters[variablesdefinition.nb_motifs]
+        self.Q_sortie_parcelle = np.add(outflow_unit, 0.5*inflow_unit[variablesdefinition.streamflow_label_custom].values) * \
+                                 _local_parameters[variablesdefinition.nb_motifs]
         #% Calcul des hauteurs et vitesses dans la rigole en sortie d'un motif
         H_sortie_motif = []
         V_sortie_motif = []
@@ -248,16 +258,17 @@ class Model:
                 _water_depth = rillproperties.water_depth(self.Q_sortie_motif[j],
                                                             _local_parameters[variablesdefinition.rugo_strickler],
                                                             rill_width,
-                                                            unit_slope[_local_parameters[variablesdefinition.nb_unit]],
+                                                            unit_slope[int(_local_parameters[variablesdefinition.nb_unit])-1],
                                                             _local_parameters[variablesdefinition.seuil_conv]
                                                         )
                 H_sortie_motif.insert(j, _water_depth)
                 _section = _water_depth * rill_width
                 V_sortie_motif.insert(j, rillproperties.water_speed(self.Q_sortie_motif[j], _section))
         #% Ajout dans les  matrices (colonne Nb_unit+1) des valeurs de Q,H,V, pour le dernier noeud
-        Q_CALC_UNIT.insert(_local_parameters[variablesdefinition.nb_unit]+1, self.Q_sortie_motif)
-        H_CALC_UNIT.insert(_local_parameters[variablesdefinition.nb_unit]+1, H_sortie_motif)#; % Calcul avec pente du dernier tronçon
-        V_CALC_UNIT.insert(_local_parameters[variablesdefinition.nb_unit]+1, V_sortie_motif)#; % Calcul avec pente du dernier tronçon
+        Q_CALC_UNIT.insert(int(_local_parameters[variablesdefinition.nb_unit]), self.Q_sortie_motif)
+        H_CALC_UNIT.insert(int(_local_parameters[variablesdefinition.nb_unit]), H_sortie_motif)#; % Calcul avec pente du dernier tronçon
+        V_CALC_UNIT.insert(int(_local_parameters[variablesdefinition.nb_unit]), V_sortie_motif)#; % Calcul avec pente du dernier tronçon
+        #print(Q_CALC_UNIT)
         return Q_CALC_UNIT, H_CALC_UNIT, V_CALC_UNIT, Q_CALC_SORTIE
 
 
@@ -291,8 +302,7 @@ class Model:
         unit_slope = slopes.vectorize(_local_parameters)
 
         precipitation_data = self.get_precipitation_data()
-        #_precipitation = self.get_precipitation_data()
-        ke_nu = kineticenergy.rain_on_bare_soil(precipitation_data,_global_parameters,kinetic_method)
+        ke_nu = kineticenergy.rain_on_bare_soil(precipitation_data, _global_parameters,kinetic_method)
         ke_veg = kineticenergy.rain_on_vegetation(_local_parameters)
         SDR_ajust_Q = sediments.adjusted_sediment_discharge_ratio(_global_parameters, _local_parameters, self.net_precipitation)
         self.Q_CALC_UNIT, H_CALC_UNIT, V_CALC_UNIT, Q_CALC_SORTIE = self.get_inflow_from_net_precipitation()
@@ -393,15 +403,20 @@ class Model:
         Cmax_cal = max(CALC_CONC_TR_LISEM[:, _local_parameters[variablesdefinition.nb_unit]+1])
         #%calcul de la masse en sédiment mesurée exportée
         sed_mes = sediments.measured_sediment_mass(streamflow, mes)
-
+        return sed_mes, CALC_Sortie_MES_Parcelle, CALC_Prod_interne_Tr
 
     def create_sedimentograph(self):
         precipitation_data = self.get_precipitation_data()
-        streamflow_data = self.get_streamflow_data()
         _, infiltration_data, _ = self.get_infiltration_data()
+        streamflow_data = self.get_streamflow_data()
         mes = self.get_sediment_concentration_data()
-        #print(precipitation_data.head())
-        graphics.sedimentograph(precipitation_data, infiltration_data, streamflow_data, mes)
+        sed_mes, CALC_Sortie_MES_Parcelle, CALC_Prod_interne_Tr = self.get_erosion_balance()
+        CALC_CONC_TR_LISEM, CALC_PROD_INTERNE, MASSE_SED, CALC_TC_LISEM, CALC_VOL_TR_LISEM = self.get_sediment_production()
+        print(CALC_Sortie_MES_Parcelle,"\n", CALC_Prod_interne_Tr)#print(precipitation_data.head())
+        graphics.sedimentograph(precipitation_data, infiltration_data, streamflow_data, self.Q_sortie_parcelle, mes,
+                                sed_mes, CALC_CONC_TR_LISEM, CALC_Sortie_MES_Parcelle, CALC_Prod_interne_Tr,
+
+                                )
 
 
 

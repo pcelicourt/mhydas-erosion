@@ -40,7 +40,7 @@ def rain_on_bare_soil(precipitation, parameters_as_dict, kinetic_method):
         14: lambda x: 30.13 * (1-5.482/x)
     }
     if isinstance(precipitation, pd.DataFrame):
-        for i in range(parameters_as_dict[variablesdefinition.nb_dt]):
+        for i in range(int(parameters_as_dict[variablesdefinition.nb_dt])):
             for j in range(len(precipitation)):
                 if precipitation[variablesdefinition.precipitation_label].values[j] < 0.0000001:
                     ke_bs.append(0)

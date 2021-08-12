@@ -2,9 +2,10 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
-
+import matplotlib
 from mhydas.mhydas.utilities import variablesdefinition
 
+sns.set(style="ticks", rc={"lines.linewidth": 0.3})
 # def hydrograph():
 #     # function f_MHYDAS_UH_graphique_HYDRO(Pluie, infil, streamflow, Q_cal, PARAM)
 #     # % Tracé graphique Pluie, Débit mesuré et débit calculé
@@ -44,7 +45,9 @@ from mhydas.mhydas.utilities import variablesdefinition
 #     #hold off
 
 
-def sedimentograph(Pluie, infil, streamflow, mes):
+def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
+                   sed_mes, CALC_CONC_TR_LISEM, CALC_Sortie_MES_Parcelle, CALC_Prod_interne_Tr,
+                    ):
     # function f_MHYDAS_UH_graphique_MES(Pluie, infil, streamflow, MES, Q_cal, SED_mes, CALC_Sortie_MES_Parcelle, CALC_CONC_TR_LISEM, CALC_Splash_Direct_Tot_Parcelle, CALC_Splash_Indirect_Tot_Parcelle, CALC_Splash_Effectif_Parcelle, CALC_Prod_interne_Tr, PARAM,metod)
     # % Tracé graphique : - pluie, hydrogrammes & turbidigrammes mesuré et simulé (FIGURE 2)
     # %                   - tableau bilan des exportations sur la parcelle (FIGURE 3)
@@ -68,17 +71,15 @@ def sedimentograph(Pluie, infil, streamflow, mes):
                        "data_group": ["flow"]*len(streamflow[variablesdefinition.streamflow_label].values),
                        "data_categories": ["measured_flow"]*len(streamflow[variablesdefinition.streamflow_label].values)
                        }))
-    data = data.append(pd.DataFrame({"timestamp": mes[variablesdefinition.timestamp].values,
-                       "values": mes[variablesdefinition.concentration_label].values,
-                       "data_group": ["flow"]*len(mes[variablesdefinition.concentration_label].values),
-                       "data_categories": ["computed_flow"]*len(mes[variablesdefinition.concentration_label].values)
+    data = data.append(pd.DataFrame({"timestamp": Q_sortie_parcelle[variablesdefinition.timestamp].values,
+                       "values": Q_sortie_parcelle[variablesdefinition.concentration_label].values,
+                       "data_group": ["flow"]*len(Q_sortie_parcelle[variablesdefinition.concentration_label].values),
+                       "data_categories": ["computed_flow"]*len(Q_sortie_parcelle[variablesdefinition.concentration_label].values)
                        }))
-    print(data)
-    grid = sns.FacetGrid(data, col="data_group", hue="data_categories", col_wrap=1, height=1.5)
-    grid.map(sns.histplot, "values")
-    #grid.map_dataframe(sns.relplot, x="timestamp", y="values")
-    # Draw a horizontal line to show the starting point
-    #grid.map(plt.axhline, y=0, ls=":", c=".5")
+
+    grid = sns.FacetGrid(data=data, col="data_group", hue="data_categories", height=8, aspect=3.5, col_wrap=1)
+    grid.map(sns.lineplot, "timestamp", "values")
+
 
     # Draw a line plot to show the trajectory of each random walk
     #grid.map(plt.plot, "step", "position", marker="o")
@@ -88,7 +89,7 @@ def sedimentograph(Pluie, infil, streamflow, mes):
     #          xlim=(-.5, 4.5), ylim=(-3.5, 3.5))
 
     # Adjust the arrangement of the plots
-    grid.fig.tight_layout(w_pad=1)
+    #grid.fig.tight_layout(w_pad=1)
     # figure(2)
     # #%**********************     Tracé de la pluie      ************************
     # subplot(3,1,1)
