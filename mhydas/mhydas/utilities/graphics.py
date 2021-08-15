@@ -54,7 +54,7 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
     # % Auteurs: Gumiere.,S.J., D. Raclot & G. Davy
     # % Version : 2008
     # % Fichier: f_MHYDAS_UH_graphique_MES.m
-
+    print("Q_sortie_parcelle", len(Q_sortie_parcelle), len(streamflow[variablesdefinition.timestamp].values))
     #global L_Pluie  L_Inf  Vol_mes  Vol_cal  Qmax_mes  Qmax_cal Cmax_mes  Cmax_cal  L_Ruiss  coeff_Nash
     data = pd.DataFrame({"timestamp": Pluie[variablesdefinition.timestamp].values,
                        "values": Pluie[variablesdefinition.precipitation_label].values,
@@ -62,19 +62,19 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
                        "data_categories": ["precipitation"]*len(Pluie[variablesdefinition.precipitation_label])
                        })
     data = data.append(pd.DataFrame({"timestamp": infil[variablesdefinition.timestamp].values,
-                       "values": infil[variablesdefinition.infiltration_rate].values,
-                       "data_group": ["precipitation"]*len(infil[variablesdefinition.infiltration_rate].values),
-                       "data_categories": ["infiltration"]*len(infil[variablesdefinition.infiltration_rate].values)
+                       "values": infil[variablesdefinition.infiltration_rate_label_custom].values,
+                       "data_group": ["precipitation"]*len(infil[variablesdefinition.infiltration_rate_label_custom].values),
+                       "data_categories": ["infiltration"]*len(infil[variablesdefinition.infiltration_rate_label_custom].values)
                        }))
     data = data.append(pd.DataFrame({"timestamp": streamflow[variablesdefinition.timestamp].values,
                        "values": streamflow[variablesdefinition.streamflow_label].values,
                        "data_group": ["flow"]*len(streamflow[variablesdefinition.streamflow_label].values),
                        "data_categories": ["measured_flow"]*len(streamflow[variablesdefinition.streamflow_label].values)
                        }))
-    data = data.append(pd.DataFrame({"timestamp": Q_sortie_parcelle[variablesdefinition.timestamp].values,
-                       "values": Q_sortie_parcelle[variablesdefinition.concentration_label].values,
-                       "data_group": ["flow"]*len(Q_sortie_parcelle[variablesdefinition.concentration_label].values),
-                       "data_categories": ["computed_flow"]*len(Q_sortie_parcelle[variablesdefinition.concentration_label].values)
+    data = data.append(pd.DataFrame({"timestamp": Pluie[variablesdefinition.timestamp].values,
+                       "values": Q_sortie_parcelle,
+                       "data_group": ["flow"]*len(Q_sortie_parcelle),
+                       "data_categories": ["computed_flow"]*len(Q_sortie_parcelle)
                        }))
 
     grid = sns.FacetGrid(data=data, col="data_group", hue="data_categories", height=8, aspect=3.5, col_wrap=1)
@@ -89,7 +89,7 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
     #          xlim=(-.5, 4.5), ylim=(-3.5, 3.5))
 
     # Adjust the arrangement of the plots
-    #grid.fig.tight_layout(w_pad=1)
+    #pgrid.fig.tight_layout(w_pad=1)
     # figure(2)
     # #%**********************     Tracé de la pluie      ************************
     # subplot(3,1,1)
