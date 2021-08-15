@@ -392,6 +392,9 @@ class Model:
         mes = self.get_sediment_concentration_data()
         CALC_CONC_TR_LISEM, CALC_PROD_INTERNE, MASSE_SED, CALC_TC_LISEM, CALC_VOL_TR_LISEM = \
         self.get_sediment_production()
+        CALC_CONC_TR_LISEM = np.array(CALC_CONC_TR_LISEM)
+
+        #CALC_CONC_TR_LISEM = np.array(CALC_CONC_TR_LISEM).T
         CALC_Prod_interne_Tr, CALC_Sortie_MES_Parcelle, CALC_Splash_Direct_Tot_Parcelle, \
         CALC_Splash_Indirect_Tot_Parcelle, CALC_Splash_Effectif_Parcelle = \
         sediments.sediments_balance(self.Q_CALC_UNIT,
@@ -403,8 +406,8 @@ class Model:
                                   _local_parameters,
                                   _global_parameters)
         #% Calcul des concentrations max (mesurée et simulée)
-        Cmax_mes = max(mes[variablesdefinition.mes_concentration].values)
-        Cmax_cal = max(CALC_CONC_TR_LISEM[:, _local_parameters[variablesdefinition.nb_unit]+1])
+        Cmax_mes = max(mes[variablesdefinition.concentration_label].values)
+        Cmax_cal = max(CALC_CONC_TR_LISEM[:, int(_local_parameters[variablesdefinition.nb_unit])])
         #%calcul de la masse en sédiment mesurée exportée
         sed_mes = sediments.measured_sediment_mass(streamflow, mes)
         return sed_mes, CALC_Sortie_MES_Parcelle, CALC_Prod_interne_Tr
@@ -415,8 +418,9 @@ class Model:
         streamflow_data = self.get_streamflow_data()
         mes = self.get_sediment_concentration_data()
         sed_mes, CALC_Sortie_MES_Parcelle, CALC_Prod_interne_Tr = self.get_erosion_balance()
+        #check this function call
         CALC_CONC_TR_LISEM, CALC_PROD_INTERNE, MASSE_SED, CALC_TC_LISEM, CALC_VOL_TR_LISEM = self.get_sediment_production()
-        print(CALC_Sortie_MES_Parcelle,"\n", CALC_Prod_interne_Tr)#print(precipitation_data.head())
+        #print(CALC_Sortie_MES_Parcelle,"\n", CALC_Prod_interne_Tr)#print(precipitation_data.head())
         graphics.sedimentograph(precipitation_data, infiltration_data, streamflow_data, self.Q_sortie_parcelle, mes,
                                 sed_mes, CALC_CONC_TR_LISEM, CALC_Sortie_MES_Parcelle, CALC_Prod_interne_Tr,
 

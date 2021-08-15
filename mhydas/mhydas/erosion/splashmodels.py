@@ -37,23 +37,25 @@ def mean_weight_diameter(precipitation, inflow_unit, Q_CALC_UNIT, unit_width, un
     # % Surf_couvert  : Surface du motif en % sous couvert végétal (% de la surface totale du motif) --> PARAM.Larg_couvert
     # % Haut_canopee  : Hauteur du couvert végétal occupant un motif --> PARAM.Haut_canopee
     # % KE            : Knetic Energy of Rainfall
-    Splash_Unit_LISEM = []
-    Splash_direct = []
-    Splash_indirect = []
+
+
     SPLASH_CALC_UNIT_LISEM = []
     CONC_SPLASH = []
-    intermed_Conc_Splash = []
+
     for i in range(int(local_param_as_dict[variablesdefinition.nb_unit])):# % garde fou : verifier Nb_unit > 1
+        Splash_Unit_LISEM = []
+        Splash_direct = []
+        Splash_indirect = []
+        intermed_Conc_Splash = []
         for j in range(len(precipitation)):
             if precipitation[variablesdefinition.precipitation_label][j] == 0 or Q_CALC_UNIT[j][i] == 0: #% Conditions: pluie et débit sur chaque unité élémentaire non nuls
                 Splash_Unit_LISEM.insert(j, 0)
             else:
                 #% Calcul du splash en Kg/pas de temps
-                _splash_direct = (2.1e-4/local_param_as_dict[variablesdefinition.mwd]) * kteste*KE_nu[j] * \
+                _splash_direct = (2.1e-4/local_param_as_dict[variablesdefinition.mwd]) * kteste * KE_nu[j] * \
                                  precipitation[variablesdefinition.precipitation_label_custom][j] * \
                                         (1-local_param_as_dict[variablesdefinition.surf_couvert]) * \
-                                        unit_width*unit_length
-
+                                        unit_width * unit_length
 
                 Splash_direct.insert(j, _splash_direct)
                 _splash_indirect = (2.1e-4/local_param_as_dict[variablesdefinition.mwd])*KE_couv * \
@@ -73,8 +75,8 @@ def mean_weight_diameter(precipitation, inflow_unit, Q_CALC_UNIT, unit_width, un
                                (inflow_unit[variablesdefinition.streamflow_label_custom][j]*
                                 global_param_as_dict[variablesdefinition.dt])
                                )
-       #% Ecriture matrices
-        print("Splash_Unit_LISEM", len(Splash_Unit_LISEM), Splash_Unit_LISEM)
+        #% Ecriture matrices
+        #print("Splash_Unit_LISEM", i, len(precipitation), len(Splash_Unit_LISEM), Splash_Unit_LISEM)
         if i == 0:
             SPLASH_CALC_UNIT_LISEM.insert(i, list(map(lambda x: x*0.5, Splash_Unit_LISEM)))
         else:
