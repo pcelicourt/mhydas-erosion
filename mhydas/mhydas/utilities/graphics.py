@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 from mhydas.mhydas.utilities import variablesdefinition
 
-sns.set(style="ticks", rc={"lines.linewidth": 0.3})
+sns.set(style="ticks", rc={"lines.linewidth": 0.5})
 # def hydrograph():
 #     # function f_MHYDAS_UH_graphique_HYDRO(Pluie, infil, streamflow, Q_cal, PARAM)
 #     # % Tracé graphique Pluie, Débit mesuré et débit calculé
@@ -47,6 +47,7 @@ sns.set(style="ticks", rc={"lines.linewidth": 0.3})
 
 def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
                    sed_mes, CALC_CONC_TR_LISEM, CALC_Sortie_MES_Parcelle, CALC_Prod_interne_Tr,
+                   global_parameters, local_parameters
                     ):
     # function f_MHYDAS_UH_graphique_MES(Pluie, infil, streamflow, MES, Q_cal, SED_mes, CALC_Sortie_MES_Parcelle, CALC_CONC_TR_LISEM, CALC_Splash_Direct_Tot_Parcelle, CALC_Splash_Indirect_Tot_Parcelle, CALC_Splash_Effectif_Parcelle, CALC_Prod_interne_Tr, PARAM,metod)
     # % Tracé graphique : - pluie, hydrogrammes & turbidigrammes mesuré et simulé (FIGURE 2)
@@ -56,13 +57,16 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
     # % Fichier: f_MHYDAS_UH_graphique_MES.m
     print("Q_sortie_parcelle", len(Q_sortie_parcelle), len(streamflow[variablesdefinition.timestamp].values))
     #global L_Pluie  L_Inf  Vol_mes  Vol_cal  Qmax_mes  Qmax_cal Cmax_mes  Cmax_cal  L_Ruiss  coeff_Nash
-    data = pd.DataFrame({"timestamp": Pluie[variablesdefinition.timestamp].values,
-                       "values": Pluie[variablesdefinition.precipitation_label].values,
+    main_time_stamps = Pluie[variablesdefinition.timestamp].values
+    data = pd.DataFrame({"timestamp": main_time_stamps,
+                       "values": list(map(lambda value: value/global_parameters[variablesdefinition.dt],
+                                          Pluie[variablesdefinition.precipitation_label].values)),
                        "data_group": ["precipitation"]*len(Pluie[variablesdefinition.precipitation_label]),
                        "data_categories": ["precipitation"]*len(Pluie[variablesdefinition.precipitation_label])
                        })
     data = data.append(pd.DataFrame({"timestamp": infil[variablesdefinition.timestamp].values,
-                       "values": infil[variablesdefinition.infiltration_rate_label_custom].values,
+                       "values": list(map(lambda value: value/global_parameters[variablesdefinition.dt],
+                                          infil[variablesdefinition.infiltration_rate_label_custom].values)),
                        "data_group": ["precipitation"]*len(infil[variablesdefinition.infiltration_rate_label_custom].values),
                        "data_categories": ["infiltration"]*len(infil[variablesdefinition.infiltration_rate_label_custom].values)
                        }))
@@ -71,13 +75,26 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
                        "data_group": ["flow"]*len(streamflow[variablesdefinition.streamflow_label].values),
                        "data_categories": ["measured_flow"]*len(streamflow[variablesdefinition.streamflow_label].values)
                        }))
-    data = data.append(pd.DataFrame({"timestamp": Pluie[variablesdefinition.timestamp].values,
+    data = data.append(pd.DataFrame({"timestamp": main_time_stamps,
                        "values": Q_sortie_parcelle,
                        "data_group": ["flow"]*len(Q_sortie_parcelle),
                        "data_categories": ["computed_flow"]*len(Q_sortie_parcelle)
                        }))
 
-    grid = sns.FacetGrid(data=data, col="data_group", hue="data_categories", height=8, aspect=3.5, col_wrap=1)
+    computed_erosion = CALC_CONC_TR_LISEM[:, int(local_parameters[variablesdefinition.nb_unit])]
+    data = data.append(pd.DataFrame({"timestamp": main_time_stamps,
+                       "values": computed_erosion,
+                       "data_group": ["erosion"]*len(computed_erosion),
+                       "data_categories": ["computed_erosion"]*len(computed_erosion)
+                       }))
+    measured_erosion = mes[variablesdefinition.concentration_label].values
+    data = data.append(pd.DataFrame({"timestamp": mes[variablesdefinition.timestamp].values,
+                       "values": measured_erosion,
+                       "data_group": ["erosion"]*len(measured_erosion),
+                       "data_categories": ["measured_erosion"]*len(measured_erosion)
+                       }))
+
+    grid = sns.FacetGrid(data=data, col="data_group", hue="data_categories", height=10, aspect=4, col_wrap=1)
     grid.map(sns.lineplot, "timestamp", "values")
 
 
