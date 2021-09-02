@@ -5,6 +5,64 @@ from mhydas.mhydas.utilities import variablesdefinition
 
 
 def hayamimodel(parameters_as_dict, long_bief, celerite_bief):
+    #  function [Noyau]=f_MHYDAS_UH_Noyau_Hayami(PARAM,long_bief,celerite_bief)
+    # % Génération d'un hydrogramme d'entrée type Hayami
+    # % Auteurs: Gumiere.,S.J., D. Raclot & G. Davy
+    # % Version : 2008
+    # % Date : Première version en Fortran (1988), Version Matlab (juin 2000).
+    # % Calcul du Noyau d'Hayami résolution de l'équation de l'onde diffusante. Les notations et les détails sont donnés dans :
+    # % Moussa R. 1996. Analytical Hayami solution for the diffusive wave flood routing problem with lateral inflow. Hydrological Processes 10(9) : 1209-1227.
+    # %
+    # % long_bief : PARAM.longueur_bief du tronçon en m
+    # % celerite_bief : vitesse de propagation de l'onde en m/s
+    # % PARAM.sigma : diffusivité de l'onde en m2/s
+    # % PARAM.duree_max_noyau : duree en nombre de pas de temps du noyau d'Hayami
+    # % PARAM.dt : pas de tempsd e calcul en secondes
+    # %
+    # % ATTENTION  :
+    # % - cette méthode suppose que la diffusivité soit non nulle
+    # % - la somme des termes du noyau doit être égale à 1. Donc plus la durée augmente et plus le pas de temps diminue, plus on se rapproche de 1.
+    # % Sinon, dans les applications il faudra veiller à ce que ce terme soit égal à 1.
+    # % - On se limité à des cas où 0.5 < z < 50. Pour cela, voir l'analyse du noyau dans :
+    # % Moussa R, Bocquillon C. 1996. Algorithms for solving the diffusive wave flood routing equation. Hydrological Processes 10(1) : 105-124.
+    # % Moussa R, Bocquillon C. 1996. Criteria for the choice of flood-routing methods in natural channels. Journal of Hydrology 186(1-4) : 1-30.
+    # % - Si la somme des termes du noyau est différente de 1, on normalise à 1
+    # % pour conserver les volumes.
+    # %
+    # % Noyau = zeros(duree,1); somme = 0;
+    #
+    #
+    # teta = long_bief./celerite_bief;
+    # zed = (celerite_bief * long_bief) / (4 * PARAM.sigma );
+    # if zed <0.5; zed = 0.5; end
+    # if zed >50 ; zed = 50; end
+    #
+    #
+    # var1 = (teta * zed / 3.1416) ^ 0.5;
+    # if teta > (0.1 * PARAM.dt)
+    #       for ii=1:PARAM.duree_max_noyau
+    #       t = (ii - 0.5) * PARAM.dt;
+    #       var2 = exp (zed * ( 2 - (t/teta) - (teta/t) ) );
+    #       var3 = t^1.5 ;
+    #       Noyau(ii,1) = var1 * var2 / var3;
+    #       % somme = somme + Noyau(ii,1)*PARAM.dt;
+    #    end
+    # else
+    #    Noyau(1,1) = 0.5/PARAM.dt;
+    #    Noyau(2,1) = 0.5/PARAM.dt;
+    #    for ii = 3:PARAM.duree_max_noyau;
+    #         Noyau(ii,1)=0;
+    #    end
+    # end
+    #
+    #
+    # % Vérification que le noyau a une intégrale égale à 1
+    # volume = sum(Noyau)*PARAM.dt;
+    #
+    # Noyau = Noyau * (1 / volume);
+    # volume_corrige = sum(Noyau)*PARAM.dt;
+    # %Texte = ' Volume du Noyau d''Hayami : volume  volume corrigé'
+    # %[volume   volume_corrige]
     teta = long_bief / celerite_bief
     zed = celerite_bief * long_bief / (4 * parameters_as_dict[variablesdefinition.sigma])
     if zed < 0.5:
@@ -13,24 +71,23 @@ def hayamimodel(parameters_as_dict, long_bief, celerite_bief):
         zed = 50
 
     noyeau = []
-    var1 = (teta * zed / 3.1416) ** 0.5
+    var1 = math.sqrt(teta * zed / 3.1416)
     if teta > 0.1 * parameters_as_dict[variablesdefinition.dt]:
-        for i in range(1, int(parameters_as_dict[variablesdefinition.duree_max_noyau]) + 1):
-            t = (i - 0.5) * parameters_as_dict[variablesdefinition.dt]
-            var2 = np.exp(zed * (2 - (t / teta) - (teta / t)))
-            var3 = math.pow(t, 1.5)
+        for i in range(int(parameters_as_dict[variablesdefinition.duree_max_noyau])):
+            t = (i + 0.5) * parameters_as_dict[variablesdefinition.dt]
+            var2 = math.exp(zed * (2 - (t / teta) - (teta / t)))
+            var3 = t**1.5
             noyeau.append(var1 * var2 / var3)
 
     else:
-        noyeau[0] = 0.5 / parameters_as_dict[variablesdefinition.dt]
-        noyeau[1] = 0.5 / parameters_as_dict[variablesdefinition.dt]
-        for i in range(2, parameters_as_dict[variablesdefinition.duree_max_noyau]):
+        noyeau.append(0.5 / parameters_as_dict[variablesdefinition.dt])
+        noyeau.append(0.5 / parameters_as_dict[variablesdefinition.dt])
+        for i in range(2, int(parameters_as_dict[variablesdefinition.duree_max_noyau])):
             noyeau.append(0)
     volume = sum(noyeau) * parameters_as_dict[variablesdefinition.dt]
-
-    noyeau = list(map(lambda x: x / volume, noyeau))
-    return noyeau
+    noyeau_final = list(map(lambda x: x / volume, noyeau))
     #volume_corrige = sum(noyeau) * parameters_as_dict[variablesdefinition.dt]
+    return noyeau_final
 
 
 def hayamitransfer(inflow, hydrologic_unit, dt):
@@ -62,22 +119,23 @@ def hayamitransfer(inflow, hydrologic_unit, dt):
     #         end
     #    end
     # end
-    #print(inflow)
-    net_rainfall_length = len(inflow)
+    #print("rouitng", max(hydrologic_unit), max(inflow))
+    inflow_length = len(inflow)
     number_of_hydrologic_unit = len(hydrologic_unit)
-    outflow = []
-    for i in range(net_rainfall_length):
-        outflow.insert(i, 0)
+    #print("routing", hydrologic_unit)
+    calc_outflow = []
+    for i in range(inflow_length):
+        _intermed_calc_outflow = 0
         number_of_calculation_steps = number_of_hydrologic_unit
-        if i < number_of_hydrologic_unit:
+        if i < number_of_calculation_steps:
             number_of_calculation_steps = i
         for j in range(number_of_calculation_steps):
-            outflow[i] += hydrologic_unit[j] * inflow[i-j] * dt
+            _intermed_calc_outflow += hydrologic_unit[j] * inflow[i-j] * dt
+            if _intermed_calc_outflow < 0.000001:
+                _intermed_calc_outflow = 0
 
-            if outflow[i] < 0.000001:
-                outflow[i] = 0
-    #print(len(outflow), net_rainfall_length)
-    return outflow
+        calc_outflow.insert(i, _intermed_calc_outflow)
+    return calc_outflow
 
 def crancknicholsontransfer(inflow, celerity, sigma, surface_unit_length, time_step, rainfall_series_length,
                             number_of_element_per_surface_unit, number_of_time_steps, number_of_virtual_steps):

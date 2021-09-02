@@ -22,19 +22,20 @@ def water_depth(inflow, rugo_strickler, rill_width, unit_slope, seuil_conv):
     # % seuil_conv      : seuil de convergence (en m) --> PARAM.Seuil_Conv
 
     _lambda = inflow/(rugo_strickler * rill_width * math.sqrt(unit_slope)) #; % constante
-    x = math.pow(_lambda, 3/5) #;% valeur initiale de la hauteur d'eau
+    x = _lambda**(3/5) #;% valeur initiale de la hauteur d'eau
     delta = 1 + seuil_conv  #;% valeur initiale du delta (doit etre > à seuil_conv)
     #print(delta, seuil_conv, _lambda * math.pow(1/x + 2/rill_width, 2/3) - x)
     while delta > seuil_conv:
         aaa = x
-        f = _lambda * math.pow(1/x + 2/rill_width, 2/3) - x
-        df = -2/3 * _lambda * (1/math.pow(x, 2)) * math.pow(1/x + 2/rill_width, -1/3)-1
-        x = x - f/df
+        f = _lambda * (1/x + 2/rill_width)**(2/3) - x
+        df = (-2/3) * _lambda * 1/x**2 * (1/x + 2/rill_width)**(-1/3)-1
+        x -= f/df
         delta = abs(x - aaa)
     if x < 0.000001:
         hauteur_newton = 0
     else:
         hauteur_newton = x
+        #print('rill', x)
     return hauteur_newton
 
 

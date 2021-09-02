@@ -1,5 +1,5 @@
 import math
-
+import numpy as np
 
 def nash_criteria(Q_mes, Q_cal):
     # function [Critere_Nash, RMSE, CRM] = f_MHYDAS_UH_Nash(Q_mes,Q_cal)
@@ -16,10 +16,10 @@ def nash_criteria(Q_mes, Q_cal):
     # % Q_cal : débit calculé
 
     Nb_Q = len(Q_mes)
-    Q_mes_moy = sum(Q_mes) / Nb_Q
+    mean_measured_flow = sum(Q_mes) / Nb_Q
 
-    num = sum((Q_mes - Q_cal)**2)
-    den = sum((Q_mes - Q_mes_moy)**2)
+    num = sum(list(map(lambda dif: dif**2, np.subtract(Q_mes, Q_cal))))
+    den = sum(list(map(lambda measured_flow: (measured_flow-mean_measured_flow)**2, Q_mes)))
 
     nash_criteria = 1-(num / den)
 

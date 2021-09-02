@@ -55,22 +55,22 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
     # % Auteurs: Gumiere.,S.J., D. Raclot & G. Davy
     # % Version : 2008
     # % Fichier: f_MHYDAS_UH_graphique_MES.m
-    print("Q_sortie_parcelle", len(Q_sortie_parcelle), len(streamflow[variablesdefinition.timestamp].values))
+    #print("Q_sortie_parcelle", len(Q_sortie_parcelle), len(streamflow[variablesdefinition.timestamp].values))
     #global L_Pluie  L_Inf  Vol_mes  Vol_cal  Qmax_mes  Qmax_cal Cmax_mes  Cmax_cal  L_Ruiss  coeff_Nash
-    main_time_stamps = Pluie[variablesdefinition.timestamp].values
+    main_time_stamps = Pluie[variablesdefinition.datetime].values
     data = pd.DataFrame({"timestamp": main_time_stamps,
                        "values": list(map(lambda value: value/global_parameters[variablesdefinition.dt],
                                           Pluie[variablesdefinition.precipitation_label].values)),
                        "data_group": ["precipitation"]*len(Pluie[variablesdefinition.precipitation_label]),
                        "data_categories": ["precipitation"]*len(Pluie[variablesdefinition.precipitation_label])
                        })
-    data = data.append(pd.DataFrame({"timestamp": infil[variablesdefinition.timestamp].values,
+    data = data.append(pd.DataFrame({"timestamp": infil[variablesdefinition.datetime].values,
                        "values": list(map(lambda value: value/global_parameters[variablesdefinition.dt],
                                           infil[variablesdefinition.infiltration_rate_label_custom].values)),
                        "data_group": ["precipitation"]*len(infil[variablesdefinition.infiltration_rate_label_custom].values),
                        "data_categories": ["infiltration"]*len(infil[variablesdefinition.infiltration_rate_label_custom].values)
                        }))
-    data = data.append(pd.DataFrame({"timestamp": streamflow[variablesdefinition.timestamp].values,
+    data = data.append(pd.DataFrame({"timestamp": streamflow[variablesdefinition.datetime].values,
                        "values": streamflow[variablesdefinition.streamflow_label].values,
                        "data_group": ["flow"]*len(streamflow[variablesdefinition.streamflow_label].values),
                        "data_categories": ["measured_flow"]*len(streamflow[variablesdefinition.streamflow_label].values)
@@ -81,23 +81,61 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
                        "data_categories": ["computed_flow"]*len(Q_sortie_parcelle)
                        }))
 
-    computed_erosion = CALC_CONC_TR_LISEM[:, int(local_parameters[variablesdefinition.nb_unit])]
-    data = data.append(pd.DataFrame({"timestamp": main_time_stamps,
-                       "values": computed_erosion,
-                       "data_group": ["erosion"]*len(computed_erosion),
-                       "data_categories": ["computed_erosion"]*len(computed_erosion)
-                       }))
-    measured_erosion = mes[variablesdefinition.concentration_label].values
-    data = data.append(pd.DataFrame({"timestamp": mes[variablesdefinition.timestamp].values,
-                       "values": measured_erosion,
-                       "data_group": ["erosion"]*len(measured_erosion),
-                       "data_categories": ["measured_erosion"]*len(measured_erosion)
-                       }))
+    # computed_erosion = CALC_CONC_TR_LISEM[:, int(local_parameters[variablesdefinition.nb_unit])-1]
+    # data = data.append(pd.DataFrame({"timestamp": main_time_stamps,
+    #                    "values": computed_erosion,
+    #                    "data_group": ["erosion"]*len(computed_erosion),
+    #                    "data_categories": ["computed_erosion"]*len(computed_erosion)
+    #                    }))
+    # measured_erosion = mes[variablesdefinition.concentration_label].values
+    # data = data.append(pd.DataFrame({"timestamp": mes[variablesdefinition.timestamp].values,
+    #                    "values": measured_erosion,
+    #                    "data_group": ["erosion"]*len(measured_erosion),
+    #                    "data_categories": ["measured_erosion"]*len(measured_erosion)
+    #                    }))
 
     grid = sns.FacetGrid(data=data, col="data_group", hue="data_categories", height=10, aspect=4, col_wrap=1)
     grid.map(sns.lineplot, "timestamp", "values")
 
 
+def erosion_balance_per_block(splash_method, CALC_Prod_interne_Tr, local_parameters, global_parameters,
+                              sed_mes, CALC_Sortie_MES_Parcelle, CALC_Splash_Effectif_Parcelle,
+                              CALC_Splash_Direct_Tot_Parcelle, L_Pluie, L_Inf, Vol_mes, Vol_cal, Qmax_mes,
+                              Qmax_cal, L_Ruiss, coeff_Nash):
+    #print(CALC_Prod_interne_Tr)
+    model_summary = [' BILAN PAR TRONCON : Modèle {0}'.format(splash_method),
+                     '  Internal production  (kg) in {0} elementary units'.format(str(
+                         local_parameters[variablesdefinition.nb_unit])),
+                     ' {0} {1}  {2}   (kg)'.format(round(CALC_Prod_interne_Tr)),
+                     ' {0} {1}  {2}   (mm)'.format(round(CALC_Prod_interne_Tr / (
+                                 local_parameters[variablesdefinition.dens_sed] * 1000 *
+                                 local_parameters[variablesdefinition.long_uh] *
+                                 local_parameters[variablesdefinition.larg_rill] *
+                                 local_parameters[variablesdefinition.nb_motifs])) * 1000),
+
+                     ]
+    print(model_summary)
+
+
+    #
+    # Text1{end+1} = ['    ' num2str(round(CALC_Prod_interne_Tr)) '    (kg)'];
+    # Text1{end+1} = ['    ' num2str((CALC_Prod_interne_Tr/(PARAM.Dens_Sed*1000*PARAM.Long_UH*PARAM.Larg_rill*PARAM.Nb_motifs))*1000) '     (mm)'];
+    # Text1{end+1} = ' --------------------------------------------';
+    # Text1{end+1} = ' BILAN A LA PARCELLE';
+    # Text1{end+1} = ['    Erosion mesurée = ' num2str(round(SED_mes)) ' kg <=> ' num2str(10*SED_mes/(PARAM.Long_UH*PARAM.Larg_UH)) ' t/ha' ] ;
+    # Text1{end+1}= ['    Erosion simulée =  ' num2str(round(CALC_Sortie_MES_Parcelle)) ' kg <=> ' num2str(10*CALC_Sortie_MES_Parcelle/(PARAM.Long_UH*PARAM.Larg_UH)) ' t/ha'];
+    # Text1{end+1}= '                       ';
+    # Text1{end+1}= ['    Bilan Erosion diffuse = ' num2str(round(CALC_Splash_Effectif_Parcelle)) ' kg <=> ' num2str(CALC_Splash_Effectif_Parcelle/(PARAM.Dens_Sed*1000*PARAM.Long_UH*PARAM.Larg_UH)*1000) ' mm'] ;
+    # Text1{end+1}= ['    Bilan Erosion concentrée = ' num2str(round(sum(CALC_Prod_interne_Tr))) 'kg' ] ;
+    # Text1{end+1}= '                       ';
+    # Text1{end+1}= ['    Bilan Masse = ' num2str(round(CALC_Sortie_MES_Parcelle-(CALC_Splash_Effectif_Parcelle + sum(CALC_Prod_interne_Tr))) ) 'kg <=> '  num2str(((CALC_Sortie_MES_Parcelle-(CALC_Splash_Effectif_Parcelle + sum(CALC_Prod_interne_Tr)))/CALC_Sortie_MES_Parcelle)*100) ' % de Erosion simulée'];
+    # Text1{end+1}= [' Splash total sur sol nu = ' num2str(CALC_Splash_Direct_Tot_Parcelle) ' kg'] ;
+    # Text1{end+1}= [' Splash total sous couvert végétal = ' num2str(CALC_Splash_Indirect_Tot_Parcelle) ' kg'] ;
+    # Text1{end+1}= [' Coef de Nash = ' num2str(coeff_Nash) ] ;
+
+    #print(grid.
+    #grid.fig.legend()
+    #grid.add_legend()
     # Draw a line plot to show the trajectory of each random walk
     #grid.map(plt.plot, "step", "position", marker="o")
 

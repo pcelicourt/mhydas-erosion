@@ -47,46 +47,46 @@ def mean_weight_diameter(precipitation, inflow_unit, Q_CALC_UNIT, unit_width, un
         Splash_direct = []
         Splash_indirect = []
         intermed_Conc_Splash = []
-        for j in range(len(precipitation)):
-            if precipitation[variablesdefinition.precipitation_label][j] == 0 or Q_CALC_UNIT[j][i] == 0: #% Conditions: pluie et débit sur chaque unité élémentaire non nuls
+        for j in range(len(precipitation)): #looks like the same is called for each elementary unit
+            if precipitation[variablesdefinition.precipitation_label].values[j] == 0 or Q_CALC_UNIT[j][i] == 0: #% Conditions: pluie et débit sur chaque unité élémentaire non nuls
                 Splash_Unit_LISEM.insert(j, 0)
             else:
                 #% Calcul du splash en Kg/pas de temps
-                _splash_direct = (2.1e-4/local_param_as_dict[variablesdefinition.mwd]) * kteste * KE_nu[j] * \
+                _splash_direct = (2.1e-4/local_param_as_dict[variablesdefinition.mwd] * kteste) * KE_nu[j] * \
                                  precipitation[variablesdefinition.precipitation_label_custom][j] * \
                                         (1-local_param_as_dict[variablesdefinition.surf_couvert]) * \
                                         unit_width * unit_length
 
-                Splash_direct.insert(j, _splash_direct)
+                Splash_direct.append(_splash_direct)
                 _splash_indirect = (2.1e-4/local_param_as_dict[variablesdefinition.mwd])*KE_couv * \
                                        precipitation[variablesdefinition.precipitation_label_custom][j] * \
                         local_param_as_dict[variablesdefinition.surf_couvert]*unit_width*unit_length
 
 
-                Splash_indirect.insert(j, _splash_indirect)
+                Splash_indirect.append(_splash_indirect)
                 #print(i, j, Splash_direct, Splash_indirect)
-                Splash_Unit_LISEM.insert(j, (_splash_direct + _splash_indirect) * SDR_ajust_Q[j])
+                Splash_Unit_LISEM.append((_splash_direct + _splash_indirect) * SDR_ajust_Q[j])
 
                 #% Calcul des concentrations issues du splash
-            if inflow_unit[variablesdefinition.streamflow_label_custom][j] == 0:
-                intermed_Conc_Splash.insert(j, 0)
+            _inflow = inflow_unit[variablesdefinition.streamflow_label_custom].values[j]
+            if _inflow == 0:
+                intermed_Conc_Splash.append(0)
             else:
-                intermed_Conc_Splash.insert(j, Splash_Unit_LISEM[j]/
-                               (inflow_unit[variablesdefinition.streamflow_label_custom][j]*
-                                global_param_as_dict[variablesdefinition.dt])
+                intermed_Conc_Splash.append(Splash_Unit_LISEM[j]/
+                                            (_inflow * global_param_as_dict[variablesdefinition.dt])
                                )
         #% Ecriture matrices
-        #print("Splash_Unit_LISEM", i, len(precipitation), len(Splash_Unit_LISEM), Splash_Unit_LISEM)
         if i == 0:
-            SPLASH_CALC_UNIT_LISEM.insert(i, list(map(lambda x: x*0.5, Splash_Unit_LISEM)))
+            SPLASH_CALC_UNIT_LISEM = np.c_[np.array(list(map(lambda x: x*0.5, Splash_Unit_LISEM)))]
+            CONC_SPLASH = np.c_[np.array(intermed_Conc_Splash)]
         else:
-            SPLASH_CALC_UNIT_LISEM.insert(i, list(map(lambda x: x*0.5, np.add(Splash_Unit_LISEM, MEM))))
+            SPLASH_CALC_UNIT_LISEM = np.c_[SPLASH_CALC_UNIT_LISEM,
+                                           np.array(list(map(lambda x: x*0.5, np.add(Splash_Unit_LISEM, MEM))))]
+            CONC_SPLASH = np.c_[CONC_SPLASH, np.array(intermed_Conc_Splash)]
 
         MEM = Splash_Unit_LISEM
-        CONC_SPLASH.insert(i, intermed_Conc_Splash)
-    #print(len(list(map(lambda x: x*0.5, Splash_Unit_LISEM))))
-    SPLASH_CALC_UNIT_LISEM.insert(int(local_param_as_dict[variablesdefinition.nb_unit]),
-                                  list(map(lambda x: x*0.5, Splash_Unit_LISEM)))
-    CONC_SPLASH.insert(int(local_param_as_dict[variablesdefinition.nb_unit]), intermed_Conc_Splash)
-    SPLASH_CALC_UNIT_LISEM = np.array(SPLASH_CALC_UNIT_LISEM).T
+
+    SPLASH_CALC_UNIT_LISEM = np.c_[SPLASH_CALC_UNIT_LISEM, np.array(list(map(lambda x: x*0.5, Splash_Unit_LISEM)))]
+    CONC_SPLASH = np.c_[CONC_SPLASH, np.array(intermed_Conc_Splash)]
+    #print("Spalsh", SPLASH_CALC_UNIT_LISEM.shape, CONC_SPLASH.shape)
     return SPLASH_CALC_UNIT_LISEM, CONC_SPLASH, Splash_Unit_LISEM, Splash_direct, Splash_indirect

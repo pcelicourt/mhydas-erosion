@@ -28,9 +28,9 @@ def adjusted_sediment_discharge_ratio(global_parameters_as_dict, local_parameter
     # % Ruissel_max :  Valeur du ruissellement nécessaire pour atteindre 91% du SDR_init (mm/pas de temps) --> PARAM.Ruissel_max
 
     adjusted_sediment_discharge_ratio = list(map(lambda x: local_parameters_as_dict[variablesdefinition.sdr_max] *
-                                            (1-math.exp(-((2.5*3600000*x /
+                                            (1-math.exp(-(2.5 * 3600000 * x /
                                                          int(global_parameters_as_dict[variablesdefinition.dt])) /
-                                            local_parameters_as_dict[variablesdefinition.ruissel_max]))),
+                                            local_parameters_as_dict[variablesdefinition.ruissel_max])),
                       net_rainfall[variablesdefinition.precipitation_label_custom]))
     # ((PARAM.Larg_UH/local_parameters_as_dict[variablesdefinition.nb_motifs])/local_parameters_as_dict[variablesdefinition.larg_rill]);
     # % Colocado um fator de distancia entre o rigole e a zona interrill mesmo que WEPP Silvio 20/03/2007
@@ -115,28 +115,27 @@ def sediment_production_per_time_interval(Masse_antecedent, Apport_Splash, Appor
 
     tc_lisem = 0
     #% 1) Comparaison entre Stream Power (w) & Critical Stream Power (wc)
-    Delta_Stream_Pow = (Vitesse_Eau_Tr*100*pente_Tr)-0.4#; % De roo and Wesseling - HP - 1996(10)1107-1117
+    Delta_Stream_Pow = Vitesse_Eau_Tr*100*pente_Tr-0.4#; % De roo and Wesseling - HP - 1996(10)1107-1117
 
     #% Calcul du diamètre spécifique de la particule (Loi de Soulsby)
-    D_specifique = math.pow(((((local_parameters_as_dict[variablesdefinition.dens_sed]-
+    D_specifique = (((local_parameters_as_dict[variablesdefinition.dens_sed]-
                                 local_parameters_as_dict[variablesdefinition.dens_fluide])/
-                               local_parameters_as_dict[variablesdefinition.dens_fluide])*9.81)/
-                             math.pow(local_parameters_as_dict[variablesdefinition.visc_fluide], 2)), 1/3)*\
-                   local_parameters_as_dict[variablesdefinition.d50_sed]#   ;
+                               local_parameters_as_dict[variablesdefinition.dens_fluide])*9.81/
+                             local_parameters_as_dict[variablesdefinition.visc_fluide]**2)**(1/3)*\
+                   local_parameters_as_dict[variablesdefinition.d50_sed]
     #% Application de la formule de Soulsby
-    Vit_depot = (local_parameters_as_dict[variablesdefinition.visc_fluide]/
-                 local_parameters_as_dict[variablesdefinition.d50_sed])*\
-                (math.pow((math.pow(10.36, 2)+1.049*math.pow(1-conc_antecedent/2650, 4.7) * math.pow(D_specifique, 3)),
-                          1/2)-10.36)
+    #print("sediments prod per inter", conc_antecedent, D_specifique)
+    Vit_depot = (local_parameters_as_dict[variablesdefinition.visc_fluide]/local_parameters_as_dict[variablesdefinition.d50_sed])*\
+                ((10.36**2+1.049*(1-conc_antecedent/2650)**4.7 * D_specifique**3)**0.5-10.36)
     #%Vit_depot = Vit_depot * PARAM.Coeff_Phi;
 
-    if  Delta_Stream_Pow < 0:# % Puissance de ruissellement insuffisante pour transporter les particules
+    if Delta_Stream_Pow < 0:# % Puissance de ruissellement insuffisante pour transporter les particules
         unit_flow_lisem = -(local_parameters_as_dict[variablesdefinition.larg_rill] * conc_antecedent * Vit_depot *
                             Long_unit) * global_parameters_as_dict[variablesdefinition.dt]#; % DEPOT : w*C*Vs*dx*dt (dépot en Kg/pas de temps)
         if unit_flow_lisem < -Masse_antecedent - Apport_Splash - Apport_Amont + Perte_Aval:
             unit_flow_lisem = -Masse_antecedent - Apport_Splash - Apport_Amont + Perte_Aval#;
     else:
-        tc_lisem = local_parameters_as_dict[variablesdefinition.dens_sed]*1000*cc*math.pow(Delta_Stream_Pow, dd)#; % converti de m3/m3 en kg/m3 (prise en cpte de la masse volumique (2650kg/m3)
+        tc_lisem = local_parameters_as_dict[variablesdefinition.dens_sed]*1000*cc*Delta_Stream_Pow**dd#; % converti de m3/m3 en kg/m3 (prise en cpte de la masse volumique (2650kg/m3)
         #tc_lisem = TC#;
         #% 2) Comparaison entre capacité de transport et charge en sédiments
         if tc_lisem-conc_antecedent < 0 :#% Incapacité de transporter car concentration > capacité de transport --> DEPOT
@@ -204,117 +203,121 @@ def sediments_concentration_per_unit(SPLASH_CALC_UNIT_LISEM, H_CALC_UNIT,  V_CAL
     #
     # %*************************   INITIALISATION    ****************************
     # %bilan volume
-    CALC_VOL_TR_LISEM = []
-    CALC_CONC_TR_LISEM = []
-    CALC_PROD_INTERNE = []
-    MASSE_SED = []
-    CALC_TC_LISEM = []
     nb_unit = int(local_parameters_as_dict[variablesdefinition.nb_unit])
-    CALC_VOL_TR_LISEM.insert(0, [0]*nb_unit)
+    data_length = len(Q_CALC_UNIT)
+    CALC_VOL_TR_LISEM = np.empty(shape=(data_length, nb_unit))
+    CALC_VOL_TR_LISEM[0] = [0] * nb_unit
     #%bilan masse sédiments
-    CALC_CONC_TR_LISEM.insert(0, [0]*(nb_unit + 1))
-    CALC_PROD_INTERNE.insert(0, [0]*nb_unit)
-    MASSE_SED.insert(0, [0]*nb_unit)
-    CALC_TC_LISEM.insert(0, [0]*nb_unit)
+    CALC_PROD_INTERNE = np.empty(shape=(data_length, nb_unit))
+    CALC_PROD_INTERNE[0] = [0] * nb_unit
+    MASSE_SED = np.empty(shape=(data_length, nb_unit+1))
+    MASSE_SED[0] = [0] * (nb_unit+1)
+    CALC_TC_LISEM = np.empty(shape=(data_length, nb_unit))
+    CALC_TC_LISEM[0] = [0] * nb_unit
+    CALC_CONC_TR_LISEM = np.empty(shape=(data_length, nb_unit+1))
+    CALC_CONC_TR_LISEM[0] = [0] * (nb_unit + 1)
 
     # % ******   CALCUL DE PARAMETRES INTERMEDIAIRES CONSTANTS POUR PRODUCTION INTERNE EN SEDIMENTS   *****
     # % fonction f_MHYDAS_UH_Flow_LISEM_Erosion
     # % Calcul des coefficients expérimentaux pour l'obtention de la capacité de transport
-    cc = math.pow(((local_parameters_as_dict[variablesdefinition.d50_sed]*1000000 + 5) /0.32), -0.6)#; % ATTENTION : équation valide pour un diamètre de particules > 32 µm
-    dd = math.pow(((local_parameters_as_dict[variablesdefinition.d50_sed]*1000000 + 5) /300), 0.25)#;  % ATTENTION : équation valide pour un diamètre de particules > 32 µm
+    cc = ((local_parameters_as_dict[variablesdefinition.d50_sed]*1000000 + 5) /0.32)**(-0.6)#; % ATTENTION : équation valide pour un diamètre de particules > 32 µm
+    dd = ((local_parameters_as_dict[variablesdefinition.d50_sed]*1000000 + 5) /300)**0.25#;  % ATTENTION : équation valide pour un diamètre de particules > 32 µm
     # % Calcul du facteur d'efficacité du détachement lié à la cohésion du sol (Raws and Govers, 1988)
     # %YY = 1/(0.89+0.56.*local_parameters_as_dict[variablesdefinition.coh]);
     betha = 0.79*math.exp(-0.85*local_parameters_as_dict[variablesdefinition.coh])
-    #print(len(Q_CALC_UNIT), Q_CALC_UNIT)
-    for j in range(1, len(Q_CALC_UNIT)):
-        #print(CALC_VOL_TR_LISEM)
-        CALC_VOL_TR_LISEM.insert(j, [])
-        CALC_TC_LISEM.insert(j, [])
-        CALC_CONC_TR_LISEM.insert(j, [])
-        CALC_PROD_INTERNE.insert(j, [])
-        MASSE_SED.insert(j, [])
-        CALC_TC_LISEM.insert(j, [])
+
+    for j in range(1, data_length):
         for i in range(nb_unit):#% garde fou : verifier Nb_unit > 1
-            #CALC_VOL_TR_LISEM.insert(i, [])
             #%*********************     BILAN  VOLUME D'EAU (m3)   *********************
             if Q_CALC_UNIT[j][i] < 0.0000001 or H_CALC_UNIT[j][i] == 0:
                 Volume_Tr_LISEM = 0
             else:
                 #% Apport d'eau latéral par ruissellement sur zone diffuse en m3/pas de temps --> Q_entree_unit
                 if i == 0:
-                    Volume_Splash = 0.5 * net_precipitation[variablesdefinition.precipitation_label_custom][j-1] * \
+                    Volume_Splash = 0.5 * net_precipitation[variablesdefinition.precipitation_label_custom].values[j-1] * \
                                     unit_length * unit_width
                     Volume_Amont = 0  # ;
                 else:
-                    Volume_Splash = net_precipitation[variablesdefinition.precipitation_label_custom][j-1] * \
+                    Volume_Splash = net_precipitation[variablesdefinition.precipitation_label_custom].values[j-1] * \
                                     unit_length * unit_width
                     Volume_Amont = Q_CALC_SORTIE[j-1][i-1] * global_parameters_as_dict[variablesdefinition.dt]
 
                 #% Apport d'eau à l'amont du tronçon (débit de sortie du tronçon précédent) en m3/pas de temps --> Q_CALC_SORTIE (t-1,Tr-1)
-                # if i == 1:
-                #    Volume_Amont = 0#;
-                # else:
-                #    Volume_Amont = Q_CALC_SORTIE(j-1,i-1)*global_parameters_as_dict[variablesdefinition.dt]#; %
-                # #end
                 #% Sortie d'eau à l'aval du tronçon en m3/pas de temps --> Q_CALC_SORTIE (t-1,Tr)
                 Volume_Aval = Q_CALC_SORTIE[j-1][i] * global_parameters_as_dict[variablesdefinition.dt]#;
                 #% volume d'eau dans le tronçon Tr au pas de temps précédent en m3
-                Volume_antecedent = CALC_VOL_TR_LISEM[j-1][i]#;
+                #print("SEDIMENT: CALC_VOL_TR_LISEM", CALC_VOL_TR_LISEM)
+                Volume_antecedent = CALC_VOL_TR_LISEM[j-1][i]
                 #% ECRITURE DU BILAN
-                Volume_Tr_LISEM = Volume_antecedent + Volume_Splash + Volume_Amont - Volume_Aval#;
+                #print("sediments", j, i, Volume_antecedent, Volume_Splash, Volume_Amont, Volume_Aval)
+                Volume_Tr_LISEM = Volume_antecedent + Volume_Splash + Volume_Amont - Volume_Aval
                 if Volume_Tr_LISEM < 0:
                     Volume_Tr_LISEM = 0
-
             #% Ecriture Matrice (stockage)
-            CALC_VOL_TR_LISEM[j].insert(i, Volume_Tr_LISEM)
-
+            #if Volume_Tr_LISEM < 0.000001:
+                #print("found one", i, j, Volume_Tr_LISEM)
+            CALC_VOL_TR_LISEM[j][i] = Volume_Tr_LISEM#;
             #%**********************  BILAN DE MASSE  EN KG/dt   ***********************
             #% Le bilan de masse est réalisé en Kg/pas de temps
             if Q_CALC_UNIT[j][i] < 0.0000001 or H_CALC_UNIT[j][i] == 0:
-                 Conc_Tr_LISEM = 0#;
-                 Masse_Tr_LISEM = 0#;
-                 CALC_TC_LISEM[j].insert(i, 0)#;
-                 Prod_interne = 0#;
+                 Conc_Tr_LISEM = 0
+                 Masse_Tr_LISEM = 0
+                 tc_lisem = 0
+                 Prod_interne = 0
             else:
                  #% Masse de sédiments dans le tronçon Tr au pas de temps précédent en Kg
-                 Masse_antecedent = CALC_CONC_TR_LISEM[j-1][i] * CALC_VOL_TR_LISEM[j-1][i]#;
+                 Masse_antecedent = CALC_CONC_TR_LISEM[j-1][i] * CALC_VOL_TR_LISEM[j-1][i]
                  #% Apport de sédiments par splash (au noeud amont) en Kg/pas de temps --> Q_entree_unit
-                 #print(i, SPLASH_CALC_UNIT_LISEM[j-1])
-                 Apport_Splash = SPLASH_CALC_UNIT_LISEM[j-1][i]#;
+                 #print("sediments", i, j, CALC_CONC_TR_LISEM[j-1], CALC_VOL_TR_LISEM[j-1], Masse_antecedent)
+                 Apport_Splash = SPLASH_CALC_UNIT_LISEM[j-1][i]
                  #% Apport de sédiments à l'amont du tronçon (débit de sortie du tronçon précédent) en Kg/pas de temps --> Q_CALC_SORTIE (t-1,Tr-1)
+                 #print("sediments", i, j, CALC_CONC_TR_LISEM[j-1][i], Q_CALC_SORTIE[j-1][i-1])
                  if i == 0:
-                     Apport_Amont = 0#;
+                     Apport_Amont = 0
                  else:
                      Apport_Amont = CALC_CONC_TR_LISEM[j-1][i-1] * Q_CALC_SORTIE[j-1][i-1] * \
                                     global_parameters_as_dict[variablesdefinition.dt]#; %
+                     if Apport_Amont > 1000:
+                            print("sediments 1",Apport_Amont, i, j, CALC_CONC_TR_LISEM[j-1], CALC_VOL_TR_LISEM[j-1])
                  #% Sortie de sédiments à l'aval du tronçon en Kg/pas de temps --> Q_CALC_SORTIE (t-1,Tr)
                  Perte_Aval = CALC_CONC_TR_LISEM[j-1][i] * Q_CALC_SORTIE[j-1][i] * \
                               global_parameters_as_dict[variablesdefinition.dt]#;
                  #% Production interne au tronçon : Dépôt OU Arrachement par le ruissellement(en Kg/pas de temps) --> Q_CALC_UNIT
+                 #print("sediments", j-1, i, CALC_CONC_TR_LISEM[j-1])
+                 conc_antecedent = CALC_CONC_TR_LISEM[j-1][i]
+                 if math.isnan(conc_antecedent) : conc_antecedent = 0
                  Prod_interne, tc_lisem = sediment_production_per_time_interval(Masse_antecedent, Apport_Splash,
                                                                                Apport_Amont, Perte_Aval,
-                                                                               CALC_CONC_TR_LISEM[j-1][i],
+                                                                               conc_antecedent,
                                                                                unit_slope[i], V_CALC_UNIT[j-1][i],
                                                                                unit_length, cc, dd, betha,
                                                                                global_parameters_as_dict,
-                                                                               local_parameters_as_dict)#;
-                 #%  Prod_interne = 0;
-                 #% TC = 0;
-                 CALC_TC_LISEM[j].insert(i, tc_lisem)#;
-                 #% ECRITURE DU BILAN
-                 Masse_Tr_LISEM = Masse_antecedent + Prod_interne + Apport_Splash + Apport_Amont - Perte_Aval#;
+                                                                               local_parameters_as_dict)
 
-                 if CALC_VOL_TR_LISEM[j][i] == 0:#;
+                 #% ECRITURE DU BILAN
+                 #print("sediments 2", Masse_antecedent, Prod_interne, Apport_Splash, Apport_Amont, Perte_Aval)
+
+                 Masse_Tr_LISEM = Masse_antecedent + Prod_interne + Apport_Splash + Apport_Amont - Perte_Aval#;
+                 #if Masse_Tr_LISEM > 1000000:
+                     #print("sediments 2", i, j, Masse_Tr_LISEM, Masse_antecedent, Prod_interne, Apport_Splash, Apport_Amont, Perte_Aval)
+                 if CALC_VOL_TR_LISEM[j][i] == 0 :
                      Conc_Tr_LISEM = 0#;
                  else:
-                     Conc_Tr_LISEM = Masse_Tr_LISEM / CALC_VOL_TR_LISEM[j][i]#;
-
+                     Conc_Tr_LISEM = Masse_Tr_LISEM / CALC_VOL_TR_LISEM[j][i]
+                     #if math.isnan(Conc_Tr_LISEM): Conc_Tr_LISEM = 0
+                     #if Conc_Tr_LISEM > 1000000:
+                        #print("sediments 3_", i, j, Conc_Tr_LISEM, Masse_Tr_LISEM, CALC_CONC_TR_LISEM[j-1], CALC_VOL_TR_LISEM[j], CALC_VOL_TR_LISEM[j-1], CALC_VOL_TR_LISEM[j-2])
+            CALC_TC_LISEM[j][i] = tc_lisem
             #% Ecriture Matrice (stockage)
-            CALC_CONC_TR_LISEM[j].insert(i, Conc_Tr_LISEM)#;
-            CALC_PROD_INTERNE[j].insert(i, Prod_interne)#;
-            MASSE_SED[j].insert(i, Masse_Tr_LISEM)#;
+            #calc_conc_tr_lisem.append(Conc_Tr_LISEM)
+            #calc_prod_interne.append(Prod_interne)
+            #mass_tr_lisem.append(Masse_Tr_LISEM)#;
+            #calc_tc_lisem.append(tc_lisem)
+            #calc_vol_tr_lisem.append(Conc_Tr_LISEM)
+            CALC_CONC_TR_LISEM[j][i] = Conc_Tr_LISEM
+            MASSE_SED[j][i] = Masse_Tr_LISEM
+            CALC_PROD_INTERNE[j][i] = Prod_interne
 
-        #% calcul de la concentration sortant du dernier noeud (colonne Nb_unit+1)
         if Q_CALC_UNIT[j][nb_unit] < 0.0000001 or Q_CALC_SORTIE[j][nb_unit-1] < 0.00000001:
             Conc_Tr_LISEM_aval = 0
             Masse_Tr_LISEM_aval = 0
@@ -327,9 +330,20 @@ def sediments_concentration_per_unit(SPLASH_CALC_UNIT_LISEM, H_CALC_UNIT,  V_CAL
                                   global_parameters_as_dict[variablesdefinition.dt]
 
         #% Ecriture Matrice (stockage du dernier noeud  )
-        CALC_CONC_TR_LISEM[j].insert(nb_unit, Conc_Tr_LISEM_aval)#;
-        MASSE_SED[j].insert(nb_unit, Masse_Tr_LISEM_aval)#;
-    CALC_CONC_TR_LISEM = np.array(CALC_CONC_TR_LISEM)
+        CALC_CONC_TR_LISEM[j][nb_unit] = Conc_Tr_LISEM_aval
+        MASSE_SED[j][nb_unit] = Masse_Tr_LISEM_aval
+        #print(j, mass_tr_lisem)
+        #calc_conc_tr_lisem.append(Conc_Tr_LISEM_aval)
+        #mass_tr_lisem.append(Masse_Tr_LISEM_aval)
+        #calc_conc_tr_lisem.append(Conc_Tr_LISEM_aval)
+        #mass_tr_lisem.append(Masse_Tr_LISEM_aval)
+
+        #% calcul de la concentration sortant du dernier noeud (colonne Nb_unit+1)
+    #print("sediments",CALC_CONC_TR_LISEM )
+    CALC_PROD_INTERNE_TR = list(map(lambda value: value * local_parameters_as_dict[variablesdefinition.nb_motifs],
+                                                              np.sum(CALC_PROD_INTERNE, axis=0)))
+    print("CALC_PROD_INTERNE_TR", CALC_PROD_INTERNE_TR,
+          np.sum(CALC_CONC_TR_LISEM[:, int(local_parameters_as_dict[variablesdefinition.nb_unit])]))
     return CALC_CONC_TR_LISEM, CALC_PROD_INTERNE, MASSE_SED, CALC_TC_LISEM, CALC_VOL_TR_LISEM
 
 
@@ -359,23 +373,32 @@ def sediments_balance(Q_CALC_UNIT, CALC_CONC_TR_LISEM, CALC_PROD_INTERNE, Splash
     # % Splash_indirect (jj,ii)      : détachement par splash sous couvert (en kg/pas de temps)
     # % SPLASH_CALC_UNIT_LISEM(jj,ii): apport par splash (en kg/pas de temps)
     #
-    # %************************   BILAN TRONCON PAR  TRONCON   ****************************
-    CALC_Prod_interne_Tr = np.sum(CALC_PROD_INTERNE) * int(local_parameters_as_dict[variablesdefinition.nb_motifs])
 
+    # %************************   BILAN TRONCON PAR  TRONCON   ****************************
+    CALC_Prod_interne_Tr = list(map(lambda value: value * int(local_parameters_as_dict[variablesdefinition.nb_motifs]),
+                                                              np.sum(CALC_PROD_INTERNE, axis=0)))
+    #print("CALC_Prod_interne_Tr", CALC_Prod_interne_Tr, CALC_CONC_TR_LISEM)
     #%************************   BILAN A LA PARCELLE   *************************
-    CALC_Splash_Direct_Tot_Parcelle = np.sum(Splash_direct)*local_parameters_as_dict[variablesdefinition.nb_unit]*\
-                                      local_parameters_as_dict[variablesdefinition.nb_motifs]
-    CALC_Splash_Indirect_Tot_Parcelle = np.sum(Splash_indirect)*local_parameters_as_dict[variablesdefinition.nb_unit]*\
+    CALC_Splash_Direct_Tot_Parcelle = sum(Splash_direct) * local_parameters_as_dict[variablesdefinition.nb_unit]
+
+    CALC_Splash_Indirect_Tot_Parcelle = sum(Splash_indirect) * local_parameters_as_dict[variablesdefinition.nb_unit] * \
                                         local_parameters_as_dict[variablesdefinition.nb_motifs]
-    CALC_Splash_Effectif_Parcelle = np.sum(np.sum(SPLASH_CALC_UNIT_LISEM))*\
+
+
+    CALC_Splash_Effectif_Parcelle = SPLASH_CALC_UNIT_LISEM.sum(axis=0).sum(axis=0)*\
                                     local_parameters_as_dict[variablesdefinition.nb_motifs]
+
+
     #% Flux instantanné de sédiments (en kg/s) sortant d'un motif élémentaire (CONCENTRATION * DEBIT)
     Flux_inst_MES_Motif = np.multiply(Q_CALC_UNIT[:, int(local_parameters_as_dict[variablesdefinition.nb_unit])],
-                                      CALC_CONC_TR_LISEM[:, int(local_parameters_as_dict[variablesdefinition.nb_unit])]
+                                      CALC_CONC_TR_LISEM[:, int(local_parameters_as_dict[variablesdefinition.nb_unit])-1]
                                       )
     #% Masse total de sédiments exportés lors de l'événement (kg)
-    CALC_Sortie_MES_Parcelle = np.sum(Flux_inst_MES_Motif) * global_parameters_as_dict[variablesdefinition.dt] * \
+    CALC_Sortie_MES_Parcelle = Flux_inst_MES_Motif.sum(axis=0) * global_parameters_as_dict[variablesdefinition.dt]*\
                                local_parameters_as_dict[variablesdefinition.nb_motifs]
+
+    print(CALC_Prod_interne_Tr, CALC_Sortie_MES_Parcelle, CALC_Splash_Direct_Tot_Parcelle, \
+           CALC_Splash_Indirect_Tot_Parcelle, CALC_Splash_Effectif_Parcelle)
     return CALC_Prod_interne_Tr, CALC_Sortie_MES_Parcelle, CALC_Splash_Direct_Tot_Parcelle, \
            CALC_Splash_Indirect_Tot_Parcelle, CALC_Splash_Effectif_Parcelle
 
@@ -395,13 +418,13 @@ def measured_sediment_mass(streamflow, mes):
     # % MES    : Concentration_MES_NT_1997_06_01.txt
 
     measured_sediment_mass =0
-    _mes_times = mes[variablesdefinition.timestamp].values
+    _mes_times = mes[variablesdefinition.datetime].values
     if len(_mes_times) < 3:
         #% CAS 1 : deux valeurs de concentrations en MES ou moins => on calcule avec
         #% concentrations moyenne * volume d'eau
         MES_moy = statistics.mean(mes[variablesdefinition.concentration_label])#; % Kg/m3
-        Volume_eau_mes = np.trapz(streamflow[variablesdefinition.timestamp].values,
-                           streamflow[variablesdefinition.streamflow_label_custom].values*86400)#ISSUE HERE TO CORRECT
+        _flow = [flow * 86400 for flow in streamflow[variablesdefinition.streamflow_label_custom].values]
+        Volume_eau_mes = np.trapz(y=_flow, dx=60)#ISSUE HERE TO CORRECT
         measured_sediment_mass = MES_moy * measured_sediment_mass#;
     else:
         # % CAS 2 : plus de deux valeurs de concentrations en MES => on calcule avec
@@ -415,21 +438,21 @@ def measured_sediment_mass(streamflow, mes):
                                     )
                                ).replace(tzinfo=None)
         #print(t_fin, streamflow[variablesdefinition.timestamp])
-        time1 = list(streamflow[streamflow[variablesdefinition.timestamp] < t_fin][variablesdefinition.timestamp].values
-                     ) + [np.datetime64(t_fin)]
+        # time1 = list(streamflow[streamflow[variablesdefinition.datetime] < t_fin][variablesdefinition.timestamp].values
+        #              ) + [datetime.toordinal(t_fin) + 366]
         #print(dates.date2num(t_fin))
         _date_times = list(map(lambda _time: dates.date2num(_time),
-                                                               streamflow[variablesdefinition.timestamp].values))
+                                                               streamflow[variablesdefinition.datetime].values))
         Q_t_fin = np.interp(dates.date2num(t_fin), _date_times,
                            streamflow[variablesdefinition.streamflow_label_custom].values
                             )
 
-        Q1 = list(streamflow[streamflow[variablesdefinition.timestamp] < t_fin]
+        Q1 = list(streamflow[streamflow[variablesdefinition.datetime] < t_fin]
                   [variablesdefinition.streamflow_label_custom].values
                      ) + [Q_t_fin]
         Q1 = [flow * 86400 for flow in Q1]
-        measured_sediment_mass = np.trapz(y=Q1, x=time1) * mes[variablesdefinition.concentration_label].values[0]
-
+        measured_sediment_mass = np.trapz(y=Q1, dx=60) * mes[variablesdefinition.concentration_label].values[0]
+        #print("sediments sum", measured_sediment_mass)
         #%gestion des intervalles au milieu
         for i in range(1, len(_mes_times)-2):
             t_deb = dates.num2date(0.5*(dates.date2num(_mes_times[i-1]) +
@@ -447,14 +470,14 @@ def measured_sediment_mass(streamflow, mes):
             Q_t_fin = np.interp(dates.date2num(t_fin), _date_times,
                            streamflow[variablesdefinition.streamflow_label_custom].values
                             )
-            timeii = [np.datetime64(t_deb)] + list(streamflow[streamflow[variablesdefinition.timestamp] < t_fin]
-                                                   [variablesdefinition.timestamp].values
-                     ) + [np.datetime64(t_fin)]
-            Qii = [Q_t_deb] + list(streamflow[streamflow[variablesdefinition.timestamp] < t_fin]
+            # timeii = [np.datetime64(t_deb)] + list(streamflow[streamflow[variablesdefinition.datetime] < t_fin]
+            #                                        [variablesdefinition.datetime].values
+            #          ) + [datetime.toordinal(t_fin) + 366]
+            Qii = [Q_t_deb] + list(streamflow[(t_deb < streamflow[variablesdefinition.datetime]) & (streamflow[variablesdefinition.datetime] < t_fin)]
                                    [variablesdefinition.streamflow_label_custom].values
                      ) + [Q_t_fin]
             Qii = [flow * 86400 for flow in Qii]
-            measured_sediment_mass += np.trapz(y=Qii, x=timeii) * mes[variablesdefinition.concentration_label].values[i]
+            measured_sediment_mass += np.trapz(y=Qii, dx=60) * mes[variablesdefinition.concentration_label].values[i]
             #measured_sediment_mass += (np.trapz(timeii, Qii*86400) * mes[variablesdefinition.concentration_label].values[i])
 
         #% gestion du dernier interval
@@ -464,15 +487,15 @@ def measured_sediment_mass(streamflow, mes):
                                ).replace(tzinfo=None)
         Q_t_deb = np.interp(dates.date2num(t_deb), _date_times,
                            streamflow[variablesdefinition.streamflow_label_custom].values)
-        time2 = [np.datetime64(t_deb)] + list(streamflow[t_deb < streamflow[variablesdefinition.timestamp]
-                                              ][variablesdefinition.timestamp].values
-                     )
+        # time2 = [np.datetime64(t_deb)] + list(streamflow[t_deb < streamflow[variablesdefinition.datetime]
+        #                                       ][variablesdefinition.datetime].values
+        #              )
 
-        Q2 = [Q_t_deb] + list(streamflow[t_deb < streamflow[variablesdefinition.timestamp]]
+        Q2 = [Q_t_deb] + list(streamflow[t_deb < streamflow[variablesdefinition.datetime]]
                               [variablesdefinition.streamflow_label_custom].values
                      )
         Q2 = [flow * 86400 for flow in Q2]
-        measured_sediment_mass += np.trapz(y=Q2, x=time2) * \
+        measured_sediment_mass += np.trapz(y=Q2, dx=60) * \
                                   mes[variablesdefinition.concentration_label].values[len(_mes_times)-1]
-
+    print("sum meas sead", measured_sediment_mass)
     return measured_sediment_mass

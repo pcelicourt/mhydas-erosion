@@ -22,7 +22,7 @@ def rain_on_bare_soil(precipitation, parameters_as_dict, kinetic_method):
     #
     # %Entrada : Pluie,PARAM,kinetic_method
     # %Saida   : KE --> Kinetic Energy (J*m^2*mm^-1)
-    ke_bs = []
+
     kinetic_energy_methods = {
         1: lambda x: 9.81 + 11.25*math.log10(x),
         2: lambda x: 29.8 * (1-(4.29/x)),
@@ -30,7 +30,7 @@ def rain_on_bare_soil(precipitation, parameters_as_dict, kinetic_method):
         4: lambda x: 29.22*(1-0.894*np.exp(-0.0477*x)),
         5: lambda x: 29.31*(1-0.281*np.exp(-0.018*x)),
         6: lambda x: 8.95 + 8.44*math.log10(x),
-        7: lambda x: 8.95 + 0.5546*x- 0.5009e-2*x**2 + 0.126e-4*x**3,
+        7: lambda x: 8.95 + 0.5546*x - 0.5009e-2*x**2 + 0.126e-4*x**3,
         8: lambda x: 27.30 + 21.68*np.exp(-0.048*x)-41.26*np.exp(-0.072*x),
         9: lambda x: 26.35*(1-0.669*np.exp(-0.0349*x)),
         10: lambda x: 29*(1-0.596*np.exp(-0.0404*x)),
@@ -40,16 +40,22 @@ def rain_on_bare_soil(precipitation, parameters_as_dict, kinetic_method):
         14: lambda x: 30.13 * (1-5.482/x)
     }
     if isinstance(precipitation, pd.DataFrame):
-        for i in range(int(parameters_as_dict[variablesdefinition.nb_dt])):
-            for j in range(len(precipitation)):
-                if precipitation[variablesdefinition.precipitation_label].values[j] < 0.0000001:
-                    ke_bs.append(0)
+        _precipitation_values = precipitation[variablesdefinition.precipitation_label].values
+        ke_bs = []
+        ke = []
+        gap_counter = 0
+        for j in range(len(precipitation)):
+            if _precipitation_values[j] < 0.0000001:
+                ke.insert(j, 0)
+            else:
+                ke_value = kinetic_energy_methods[kinetic_method](_precipitation_values[j])
+                if _precipitation_values[j] > 76 and kinetic_method == 3:
+                    ke.insert(j, ke_value)
                 else:
-                    ke_bs.append(kinetic_energy_methods[kinetic_method](
-                       precipitation[variablesdefinition.precipitation_label].values[j]
-                       )
-                    )
-        #ke_couv = 15.8*(parameters_as_dict[variablesdefinition.haut_canopee])**0.5-5.87
+                    if j-gap_counter > 1:
+                        ke_bs.extend([0]*(j-gap_counter-1))
+                    ke_bs.insert(j, ke_value)
+                    gap_counter = j
         return ke_bs
     else:
         raise ValueError("The precipitation data is not a data frame.")
