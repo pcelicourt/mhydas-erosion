@@ -368,7 +368,7 @@ class Model:
             self.get_infiltration_data()
         self.L_Pluie = sum(precipitation_data[variablesdefinition.precipitation_label_custom].values) * 1000
         self.L_Ruiss = sum(self.net_precipitation[variablesdefinition.precipitation_label_custom]) * 1000
-        self.L_Inf = L_Pluie - L_Ruiss  # ; % Lames précipitées, ruisselées et infiltrées en mm
+        self.L_Inf = self.L_Pluie - self.L_Ruiss  # ; % Lames précipitées, ruisselées et infiltrées en mm
         streamflow = self.get_streamflow_data()
 
         self.Vol_mes = np.trapz(y=streamflow[variablesdefinition.streamflow_label_custom].values, dx=60)  # ; % Calcul du volume écoulé mesuré en m3
@@ -427,11 +427,11 @@ class Model:
                                 self.CALC_Prod_interne_Tr,
                                 _global_parameters, _local_parameters
                                 )
-        graphics.erosion_balance_per_block(splash_method, CALC_Prod_interne_Tr, _local_parameters, _global_parameters,
-                                           sed_mes, CALC_Sortie_MES_Parcelle, CALC_Splash_Effectif_Parcelle,
-                                           CALC_Splash_Direct_Tot_Parcelle, self.L_Pluie, self.L_Inf, self.Vol_mes,
-                                           self.Vol_cal, self.Qmax_mes,
-                                           self.Qmax_cal, self.L_Ruiss, self.coeff_Nash)
+        # graphics.erosion_balance_per_block(splash_method, CALC_Prod_interne_Tr, _local_parameters, _global_parameters,
+        #                                    sed_mes, CALC_Sortie_MES_Parcelle, CALC_Splash_Effectif_Parcelle,
+        #                                    CALC_Splash_Direct_Tot_Parcelle, self.L_Pluie, self.L_Inf, self.Vol_mes,
+        #                                    self.Vol_cal, self.Qmax_mes,
+        #                                    self.Qmax_cal, self.L_Ruiss, self.coeff_Nash)
 
 
 if __name__ == '__main__':
