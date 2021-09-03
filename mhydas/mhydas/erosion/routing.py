@@ -86,7 +86,6 @@ def hayamimodel(parameters_as_dict, long_bief, celerite_bief):
             noyeau.append(0)
     volume = sum(noyeau) * parameters_as_dict[variablesdefinition.dt]
     noyeau_final = list(map(lambda x: x / volume, noyeau))
-    #volume_corrige = sum(noyeau) * parameters_as_dict[variablesdefinition.dt]
     return noyeau_final
 
 
@@ -119,10 +118,9 @@ def hayamitransfer(inflow, hydrologic_unit, dt):
     #         end
     #    end
     # end
-    #print("rouitng", max(hydrologic_unit), max(inflow))
+
     inflow_length = len(inflow)
     number_of_hydrologic_unit = len(hydrologic_unit)
-    #print("routing", hydrologic_unit)
     calc_outflow = []
     for i in range(inflow_length):
         _intermed_calc_outflow = 0

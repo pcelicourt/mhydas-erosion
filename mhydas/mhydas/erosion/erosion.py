@@ -167,10 +167,8 @@ class Model:
         unit_slope = slopes.vectorize(_local_parameters)
         unit_celerity = list(map(lambda x: _global_parameters[variablesdefinition.celerite] * x / mean(unit_slope),
                                  unit_slope))
-        #print("Unit Celerity", unit_celerity)
         # compute inflow_unit as a separate method
         inflow_unit = self.get_inflow_unit()  #; % Débit d'entrée latéral (m3/s)
-        #print("inflow_unit", list(inflow_unit[variablesdefinition.streamflow_label_custom].values))
         if _global_parameters[variablesdefinition.code_transfert] == 1:
             print("2. MHYDAS_UH : Fonction de transfert par le modèle de l'onde diffusante")
         else:
@@ -241,11 +239,10 @@ class Model:
                 # % Vitesse (m/s) en entrée du tronçon
                 V_CALC_UNIT = np.c_[V_CALC_UNIT, np.array(V_entree)]
                 # % Débit (m3/s) sortant du tronçon considéré (débit d'entrée, Q_entree, transféré)
-                Q_CALC_SORTIE = np.c_[Q_CALC_UNIT, np.array(outflow_unit)]
+                Q_CALC_SORTIE = np.c_[Q_CALC_SORTIE, np.array(outflow_unit)]
 
             # % ********** Calcul des variables HYDRO (communs aux 2 méthodes) **********
             # % Ecriture matrices
-
         # % Débit (m3/s) sortant d'un motif
         #print("Outflow", max(outflow_unit), max(inflow_unit[variablesdefinition.streamflow_label_custom].values))
         self.Q_sortie_motif = np.add(outflow_unit,
@@ -359,7 +356,6 @@ class Model:
                                                        unit_slope, self.net_precipitation,
                                                        _global_parameters, _local_parameters
                                                        )
-        #print("Erosion;CALC_PROD_INTERNE", CALC_CONC_TR_LISEM)
         #return CALC_CONC_TR_LISEM, CALC_PROD_INTERNE, MASSE_SED, CALC_TC_LISEM, CALC_VOL_TR_LISEM, splash_method
 
     def get_hydrologic_balance(self):
@@ -370,30 +366,26 @@ class Model:
         precipitation_data = self.get_precipitation_data()
         if not len(self.net_precipitation):
             self.get_infiltration_data()
-        L_Pluie = sum(precipitation_data[variablesdefinition.precipitation_label_custom].values) * 1000
-        L_Ruiss = sum(self.net_precipitation[variablesdefinition.precipitation_label_custom]) * 1000
-        L_Inf = L_Pluie - L_Ruiss  # ; % Lames précipitées, ruisselées et infiltrées en mm
+        self.L_Pluie = sum(precipitation_data[variablesdefinition.precipitation_label_custom].values) * 1000
+        self.L_Ruiss = sum(self.net_precipitation[variablesdefinition.precipitation_label_custom]) * 1000
+        self.L_Inf = L_Pluie - L_Ruiss  # ; % Lames précipitées, ruisselées et infiltrées en mm
         streamflow = self.get_streamflow_data()
-        #_flow = [flow * 86400 for flow in streamflow[variablesdefinition.streamflow_label].values]
-        #_time = list(map(lambda x: datetime.toordinal(datetime(x)) + 366, streamflow[variablesdefinition.timestamp].values))
-        #print(streamflow[variablesdefinition.timestamp].values)
-        Vol_mes = np.trapz(y=streamflow[variablesdefinition.streamflow_label_custom].values, dx=60)  # ; % Calcul du volume écoulé mesuré en m3
 
-        Vol_cal = sum(self.Q_sortie_parcelle) * _global_parameters[variablesdefinition.dt]
-        _, Qmax_mes = max(enumerate(streamflow[variablesdefinition.streamflow_label_custom].values),
+        self.Vol_mes = np.trapz(y=streamflow[variablesdefinition.streamflow_label_custom].values, dx=60)  # ; % Calcul du volume écoulé mesuré en m3
+
+        self.Vol_cal = sum(self.Q_sortie_parcelle) * _global_parameters[variablesdefinition.dt]
+        _, self.Qmax_mes = max(enumerate(streamflow[variablesdefinition.streamflow_label_custom].values),
                              key=operator.itemgetter(1))
-        _, Qmax_cal = max(enumerate(self.Q_sortie_parcelle), key=operator.itemgetter(1))
+        _, self.Qmax_cal = max(enumerate(self.Q_sortie_parcelle), key=operator.itemgetter(1))
 
         aux = set(precipitation_data[variablesdefinition.datetime].values).intersection(
             streamflow[variablesdefinition.datetime].values)
 
         ii = precipitation_data.loc[precipitation_data[variablesdefinition.datetime].isin(aux)].index.values
         jj = streamflow.loc[streamflow[variablesdefinition.datetime].isin(aux)].index.values
-        coeff_Nash, RMSE, CRM = errors.nash_criteria([streamflow[variablesdefinition.streamflow_label_custom].values[j]
+        self.coeff_Nash, self.RMSE, self.CRM = errors.nash_criteria([streamflow[variablesdefinition.streamflow_label_custom].values[j]
                                                       for j in jj],
                                                       [self.Q_sortie_parcelle[i] for i in ii])
-        print("erosion", L_Pluie, L_Inf, L_Ruiss, Vol_mes, Vol_cal, Qmax_mes, Qmax_cal, coeff_Nash)
-        return L_Pluie, L_Inf, Vol_mes, Vol_cal, Qmax_mes, Qmax_cal, L_Ruiss, coeff_Nash
 
     def set_erosion_balance_parameters(self):
         # %*******************   BILAN EROSION (mesurée & simulée) *******************
@@ -402,7 +394,6 @@ class Model:
         _local_parameters = self.get_local_parameters()
         streamflow = self.get_streamflow_data()
         self.mes = self.get_sediment_concentration_data()
-        #print("erosion sedim", self.mes)
         self.set_sediment_production_parameters()
 
         self.CALC_Prod_interne_Tr, self.CALC_Sortie_MES_Parcelle, self.CALC_Splash_Direct_Tot_Parcelle, \
@@ -420,7 +411,6 @@ class Model:
         self.Cmax_cal = max(self.CALC_CONC_TR_LISEM[:, int(_local_parameters[variablesdefinition.nb_unit])])
         # %calcul de la masse en sédiment mesurée exportée
         self.sed_mes = sediments.measured_sediment_mass(streamflow, self.mes)
-        print("Erosion balaance", self.Cmax_cal, self.Cmax_mes, self.CALC_Sortie_MES_Parcelle, self.sed_mes, self.CALC_Prod_interne_Tr)
 
     def create_sedimentograph(self):
         _global_parameters = self.get_global_parameters()
@@ -430,17 +420,18 @@ class Model:
         streamflow_data = self.get_streamflow_data()
 
         self.set_erosion_balance_parameters()
-        L_Pluie, L_Inf, Vol_mes, Vol_cal, Qmax_mes, Qmax_cal, L_Ruiss, coeff_Nash = self.get_hydrologic_balance()
+        self.get_hydrologic_balance()
 
         graphics.sedimentograph(precipitation_data, infiltration_data, streamflow_data, self.Q_sortie_parcelle, self.mes,
                                 self.sed_mes, self.CALC_CONC_TR_LISEM, self.CALC_Sortie_MES_Parcelle,
                                 self.CALC_Prod_interne_Tr,
                                 _global_parameters, _local_parameters
                                 )
-        # graphics.erosion_balance_per_block(splash_method, CALC_Prod_interne_Tr, _local_parameters, _global_parameters,
-        #                                    sed_mes, CALC_Sortie_MES_Parcelle, CALC_Splash_Effectif_Parcelle,
-        #                                    CALC_Splash_Direct_Tot_Parcelle, L_Pluie, L_Inf, Vol_mes, Vol_cal, Qmax_mes,
-        #                                    Qmax_cal, L_Ruiss,coeff_Nash)
+        graphics.erosion_balance_per_block(splash_method, CALC_Prod_interne_Tr, _local_parameters, _global_parameters,
+                                           sed_mes, CALC_Sortie_MES_Parcelle, CALC_Splash_Effectif_Parcelle,
+                                           CALC_Splash_Direct_Tot_Parcelle, self.L_Pluie, self.L_Inf, self.Vol_mes,
+                                           self.Vol_cal, self.Qmax_mes,
+                                           self.Qmax_cal, self.L_Ruiss, self.coeff_Nash)
 
 
 if __name__ == '__main__':

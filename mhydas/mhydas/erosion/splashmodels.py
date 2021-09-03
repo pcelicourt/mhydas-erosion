@@ -41,34 +41,40 @@ def mean_weight_diameter(precipitation, inflow_unit, Q_CALC_UNIT, unit_width, un
 
     SPLASH_CALC_UNIT_LISEM = []
     CONC_SPLASH = []
-
+    precipitation_values = precipitation[variablesdefinition.precipitation_label_custom]
+    inflow_values = inflow_unit[variablesdefinition.streamflow_label_custom].values
     for i in range(int(local_param_as_dict[variablesdefinition.nb_unit])):# % garde fou : verifier Nb_unit > 1
         Splash_Unit_LISEM = []
         Splash_direct = []
         Splash_indirect = []
         intermed_Conc_Splash = []
+        gap_counter = 0
         for j in range(len(precipitation)): #looks like the same is called for each elementary unit
-            if precipitation[variablesdefinition.precipitation_label].values[j] == 0 or Q_CALC_UNIT[j][i] == 0: #% Conditions: pluie et débit sur chaque unité élémentaire non nuls
+            if precipitation_values[j] == 0 or Q_CALC_UNIT[j][i] == 0: #% Conditions: pluie et débit sur chaque unité élémentaire non nuls
                 Splash_Unit_LISEM.insert(j, 0)
             else:
                 #% Calcul du splash en Kg/pas de temps
+                if j - gap_counter > 1:
+                    Splash_direct.extend([0] * (j - gap_counter - 1))
+                    Splash_indirect.extend([0] * (j - gap_counter - 1))
+
                 _splash_direct = (2.1e-4/local_param_as_dict[variablesdefinition.mwd] * kteste) * KE_nu[j] * \
-                                 precipitation[variablesdefinition.precipitation_label_custom][j] * \
+                                 precipitation_values[j] * \
                                         (1-local_param_as_dict[variablesdefinition.surf_couvert]) * \
                                         unit_width * unit_length
 
                 Splash_direct.append(_splash_direct)
                 _splash_indirect = (2.1e-4/local_param_as_dict[variablesdefinition.mwd])*KE_couv * \
-                                       precipitation[variablesdefinition.precipitation_label_custom][j] * \
+                                       precipitation_values[j] * \
                         local_param_as_dict[variablesdefinition.surf_couvert]*unit_width*unit_length
 
-
                 Splash_indirect.append(_splash_indirect)
-                #print(i, j, Splash_direct, Splash_indirect)
+
                 Splash_Unit_LISEM.append((_splash_direct + _splash_indirect) * SDR_ajust_Q[j])
+                gap_counter = j
 
                 #% Calcul des concentrations issues du splash
-            _inflow = inflow_unit[variablesdefinition.streamflow_label_custom].values[j]
+            _inflow = inflow_values[j]
             if _inflow == 0:
                 intermed_Conc_Splash.append(0)
             else:
@@ -88,5 +94,5 @@ def mean_weight_diameter(precipitation, inflow_unit, Q_CALC_UNIT, unit_width, un
 
     SPLASH_CALC_UNIT_LISEM = np.c_[SPLASH_CALC_UNIT_LISEM, np.array(list(map(lambda x: x*0.5, Splash_Unit_LISEM)))]
     CONC_SPLASH = np.c_[CONC_SPLASH, np.array(intermed_Conc_Splash)]
-    #print("Spalsh", SPLASH_CALC_UNIT_LISEM.shape, CONC_SPLASH.shape)
+
     return SPLASH_CALC_UNIT_LISEM, CONC_SPLASH, Splash_Unit_LISEM, Splash_direct, Splash_indirect
