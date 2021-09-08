@@ -88,7 +88,7 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
                        "data_categories": ["computed_erosion"]*len(computed_erosion)
                        }))
     measured_erosion = mes[variablesdefinition.concentration_label].values
-    data = data.append(pd.DataFrame({"timestamp": mes[variablesdefinition.timestamp].values,
+    data = data.append(pd.DataFrame({"timestamp": mes[variablesdefinition.datetime].values,
                        "values": measured_erosion,
                        "data_group": ["erosion"]*len(measured_erosion),
                        "data_categories": ["measured_erosion"]*len(measured_erosion)
