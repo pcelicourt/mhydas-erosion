@@ -96,7 +96,7 @@ class Model:
         return data
 
     def get_streamflow_data(self):
-        columns = [variablesdefinition.datetime, variablesdefinition.timestamp, variablesdefinition.streamflow_label,
+        columns = [variablesdefinition.datetime, variablesdefinition.streamflow_label,
                    variablesdefinition.streamflow_label_custom
                    ]
         streamflow_data = pd.DataFrame(columns=columns)
@@ -105,19 +105,19 @@ class Model:
                            ).convert_dtypes()
         for index, row in data.iterrows():
             _time = datetime(*(row.values[:6]))
-            values = [_time, datetime.toordinal(_time) + 366, row.values[6], row.values[6] * 0.001]
+            values = [_time, row.values[6], row.values[6] * 0.001]
             streamflow_data = streamflow_data.append(dict(zip(columns, values)), ignore_index=True)
         return streamflow_data
 
     def get_sediment_concentration_data(self):
-        columns = [variablesdefinition.datetime, variablesdefinition.timestamp, variablesdefinition.concentration_label]
+        columns = [variablesdefinition.datetime, variablesdefinition.concentration_label] #variablesdefinition.timestamp,
         mes_concentration_data = pd.DataFrame(columns=columns)
         data = pd.read_csv(self.main_config_file_content.get(variablesdefinition.mes_concentration),
                            sep="\t", skiprows=3, header=None
                            ).convert_dtypes()
         for index, row in data.iterrows():
             _time = datetime(*list(map(int, row.values[:6])))
-            values = [_time, datetime.toordinal(_time) + 366, row.values[6]]
+            values = [_time, row.values[6]] #datetime.toordinal(_time) + 366,
             mes_concentration_data = mes_concentration_data.append(dict(zip(columns, values)), ignore_index=True)
         #print("mes", mes_concentration_data.head())
         return mes_concentration_data
@@ -356,7 +356,6 @@ class Model:
                                                        unit_slope, self.net_precipitation,
                                                        _global_parameters, _local_parameters
                                                        )
-        #return CALC_CONC_TR_LISEM, CALC_PROD_INTERNE, MASSE_SED, CALC_TC_LISEM, CALC_VOL_TR_LISEM, splash_method
 
     def get_hydrologic_balance(self):
         # %*************************   BILAN HYDROLOGIQUE   *************************
@@ -427,11 +426,12 @@ class Model:
                                 self.CALC_Prod_interne_Tr,
                                 _global_parameters, _local_parameters
                                 )
-        # graphics.erosion_balance_per_block(splash_method, CALC_Prod_interne_Tr, _local_parameters, _global_parameters,
-        #                                    sed_mes, CALC_Sortie_MES_Parcelle, CALC_Splash_Effectif_Parcelle,
-        #                                    CALC_Splash_Direct_Tot_Parcelle, self.L_Pluie, self.L_Inf, self.Vol_mes,
-        #                                    self.Vol_cal, self.Qmax_mes,
-        #                                    self.Qmax_cal, self.L_Ruiss, self.coeff_Nash)
+        graphics.erosion_balance_per_block(self.splash_method, self.CALC_Prod_interne_Tr, _local_parameters,
+                                           _global_parameters, self.sed_mes, self.CALC_Sortie_MES_Parcelle,
+                                           self.CALC_Splash_Effectif_Parcelle, self.CALC_Splash_Direct_Tot_Parcelle,
+                                           self.CALC_Splash_Indirect_Tot_Parcelle,
+                                           self.L_Pluie, self.L_Inf, self.Vol_mes, self.Vol_cal, self.Qmax_mes,
+                                           self.Qmax_cal, self.L_Ruiss, self.coeff_Nash)
 
 
 if __name__ == '__main__':

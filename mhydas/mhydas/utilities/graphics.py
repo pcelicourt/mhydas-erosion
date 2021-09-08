@@ -81,18 +81,18 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
                        "data_categories": ["computed_flow"]*len(Q_sortie_parcelle)
                        }))
 
-    # computed_erosion = CALC_CONC_TR_LISEM[:, int(local_parameters[variablesdefinition.nb_unit])-1]
-    # data = data.append(pd.DataFrame({"timestamp": main_time_stamps,
-    #                    "values": computed_erosion,
-    #                    "data_group": ["erosion"]*len(computed_erosion),
-    #                    "data_categories": ["computed_erosion"]*len(computed_erosion)
-    #                    }))
-    # measured_erosion = mes[variablesdefinition.concentration_label].values
-    # data = data.append(pd.DataFrame({"timestamp": mes[variablesdefinition.timestamp].values,
-    #                    "values": measured_erosion,
-    #                    "data_group": ["erosion"]*len(measured_erosion),
-    #                    "data_categories": ["measured_erosion"]*len(measured_erosion)
-    #                    }))
+    computed_erosion = CALC_CONC_TR_LISEM[:, int(local_parameters[variablesdefinition.nb_unit])-1]
+    data = data.append(pd.DataFrame({"timestamp": main_time_stamps,
+                       "values": computed_erosion,
+                       "data_group": ["erosion"]*len(computed_erosion),
+                       "data_categories": ["computed_erosion"]*len(computed_erosion)
+                       }))
+    measured_erosion = mes[variablesdefinition.concentration_label].values
+    data = data.append(pd.DataFrame({"timestamp": mes[variablesdefinition.timestamp].values,
+                       "values": measured_erosion,
+                       "data_group": ["erosion"]*len(measured_erosion),
+                       "data_categories": ["measured_erosion"]*len(measured_erosion)
+                       }))
 
     grid = sns.FacetGrid(data=data, col="data_group", hue="data_categories", height=10, aspect=4, col_wrap=1)
     grid.map(sns.lineplot, "timestamp", "values")
@@ -100,21 +100,45 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
 
 def erosion_balance_per_block(splash_method, CALC_Prod_interne_Tr, local_parameters, global_parameters,
                               sed_mes, CALC_Sortie_MES_Parcelle, CALC_Splash_Effectif_Parcelle,
-                              CALC_Splash_Direct_Tot_Parcelle, L_Pluie, L_Inf, Vol_mes, Vol_cal, Qmax_mes,
+                              CALC_Splash_Direct_Tot_Parcelle, CALC_Splash_Indirect_Tot_Parcelle,
+                              L_Pluie, L_Inf, Vol_mes, Vol_cal, Qmax_mes,
                               Qmax_cal, L_Ruiss, coeff_Nash):
     #print(CALC_Prod_interne_Tr)
-    model_summary = [' BILAN PAR TRONCON : Modèle {0}'.format(splash_method),
-                     '  Internal production  (kg) in {0} elementary units'.format(str(
-                         local_parameters[variablesdefinition.nb_unit])),
-                     ' {0} {1}  {2}   (kg)'.format(round(CALC_Prod_interne_Tr)),
-                     ' {0} {1}  {2}   (mm)'.format(round(CALC_Prod_interne_Tr / (
+    model_summary = [' BILAN PAR TRONCON : Modèle {0} \n'.format(splash_method),
+                     '  Internal production  (kg) in {0} elementary units \n'.format(
+                         int(local_parameters[variablesdefinition.nb_unit])),
+                     ' {0} {1}  {2}   (kg)'.format(*CALC_Prod_interne_Tr),
+                     ' {0} {1}  {2}   (mm)'.format(*list(map(lambda _calculated_internal_production:
+                                                            round(_calculated_internal_production * 1000 / (
                                  local_parameters[variablesdefinition.dens_sed] * 1000 *
                                  local_parameters[variablesdefinition.long_uh] *
                                  local_parameters[variablesdefinition.larg_rill] *
-                                 local_parameters[variablesdefinition.nb_motifs])) * 1000),
+                                 local_parameters[variablesdefinition.nb_motifs]), 4), CALC_Prod_interne_Tr))),
+                     ' --------------------------------------------',
+                     ' BILAN A LA PARCELLE',
+                     '    Erosion mesurée = {0}  kg <=>  {1}  t/ha'.format(round(sed_mes, 4),
+                                            round(10 * sed_mes / (local_parameters[variablesdefinition.long_uh] *
+                                            local_parameters[variablesdefinition.larg_uh]), 4)),
+                     '    Erosion simulée = {0}  kg <=>  {1}  t/ha'.format(round(CALC_Sortie_MES_Parcelle, 4),
+                     round(10 * CALC_Sortie_MES_Parcelle / (local_parameters[variablesdefinition.long_uh] *
+                                           local_parameters[variablesdefinition.larg_uh]), 4)),
+                     '    Bilan Erosion diffuse = {0}  kg <=> {1} mm'.format(round(CALC_Splash_Effectif_Parcelle, 4),
+                                                                             round(
+            CALC_Splash_Effectif_Parcelle / (local_parameters[variablesdefinition.dens_sed] * 1000 *
+                                             local_parameters[variablesdefinition.long_uh] *
+                                             local_parameters[variablesdefinition.larg_uh]) * 1000, 4)),
+                     '    Bilan Erosion concentrée = {0} kg'.format(round(sum(CALC_Prod_interne_Tr))),
+                     '    Bilan Masse = {0} kg <=> {1}  % de Erosion simulée'.format(
+            round(CALC_Sortie_MES_Parcelle - (CALC_Splash_Effectif_Parcelle + sum(CALC_Prod_interne_Tr)), 4),
+                      round(((CALC_Sortie_MES_Parcelle - (CALC_Splash_Effectif_Parcelle + sum(
+                         CALC_Prod_interne_Tr))) / CALC_Sortie_MES_Parcelle) * 100, 4)),
+                     ' Splash total sur sol nu = {0} kg'.format(round(CALC_Splash_Direct_Tot_Parcelle, 4)),
+                     ' Splash total sous couvert végétal = {0} kg'.format(round(CALC_Splash_Indirect_Tot_Parcelle, 4)),
+                     ' Coef de Nash = {0}'.format(round(coeff_Nash, 4))
 
                      ]
-    print(model_summary)
+    for element in model_summary:
+        print(element)
 
 
     #

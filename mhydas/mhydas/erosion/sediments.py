@@ -4,6 +4,7 @@ from datetime import datetime
 
 import matplotlib.dates as dates
 import numpy as np
+import scipy.integrate as spi
 
 from mhydas.mhydas.utilities import variablesdefinition
 
@@ -345,7 +346,8 @@ def sediments_balance(Q_CALC_UNIT, CALC_CONC_TR_LISEM, CALC_PROD_INTERNE, Splash
                                                               np.sum(CALC_PROD_INTERNE, axis=0)))
     #print("CALC_Prod_interne_Tr", CALC_Prod_interne_Tr, CALC_CONC_TR_LISEM)
     #%************************   BILAN A LA PARCELLE   *************************
-    CALC_Splash_Direct_Tot_Parcelle = sum(Splash_direct) * local_parameters_as_dict[variablesdefinition.nb_unit]
+    CALC_Splash_Direct_Tot_Parcelle = sum(Splash_direct) * local_parameters_as_dict[variablesdefinition.nb_unit] *\
+                                        local_parameters_as_dict[variablesdefinition.nb_motifs]
 
     CALC_Splash_Indirect_Tot_Parcelle = sum(Splash_indirect) * local_parameters_as_dict[variablesdefinition.nb_unit] * \
                                         local_parameters_as_dict[variablesdefinition.nb_motifs]
@@ -357,7 +359,7 @@ def sediments_balance(Q_CALC_UNIT, CALC_CONC_TR_LISEM, CALC_PROD_INTERNE, Splash
 
     #% Flux instantanné de sédiments (en kg/s) sortant d'un motif élémentaire (CONCENTRATION * DEBIT)
     Flux_inst_MES_Motif = np.multiply(Q_CALC_UNIT[:, int(local_parameters_as_dict[variablesdefinition.nb_unit])],
-                                      CALC_CONC_TR_LISEM[:, int(local_parameters_as_dict[variablesdefinition.nb_unit])-1]
+                                      CALC_CONC_TR_LISEM[:, int(local_parameters_as_dict[variablesdefinition.nb_unit])]
                                       )
     #% Masse total de sédiments exportés lors de l'événement (kg)
     CALC_Sortie_MES_Parcelle = Flux_inst_MES_Motif.sum(axis=0) * global_parameters_as_dict[variablesdefinition.dt]*\
@@ -383,14 +385,14 @@ def measured_sediment_mass(streamflow, mes):
     # % Debit  : Debit_6_1997_06_01.txt
     # % MES    : Concentration_MES_NT_1997_06_01.txt
 
-    measured_sediment_mass =0
+    measured_sediment_mass = 0
     _mes_times = mes[variablesdefinition.datetime].values
     if len(_mes_times) < 3:
         #% CAS 1 : deux valeurs de concentrations en MES ou moins => on calcule avec
         #% concentrations moyenne * volume d'eau
         MES_moy = statistics.mean(mes[variablesdefinition.concentration_label])#; % Kg/m3
-        _flow = [flow * 86400 for flow in streamflow[variablesdefinition.streamflow_label_custom].values]
-        Volume_eau_mes = np.trapz(y=_flow, dx=60)#ISSUE HERE TO CORRECT
+        #_flow = [flow * 86400 for flow in streamflow[variablesdefinition.streamflow_label_custom].values]
+        #Volume_eau_mes = np.trapz(y=_flow, dx=60)#ISSUE HERE TO CORRECT
         measured_sediment_mass = MES_moy * measured_sediment_mass#;
     else:
         # % CAS 2 : plus de deux valeurs de concentrations en MES => on calcule avec
@@ -414,9 +416,8 @@ def measured_sediment_mass(streamflow, mes):
                             )
 
         Q1 = list(streamflow[streamflow[variablesdefinition.datetime] < t_fin]
-                  [variablesdefinition.streamflow_label_custom].values
-                     ) + [Q_t_fin]
-        Q1 = [flow * 86400 for flow in Q1]
+                  [variablesdefinition.streamflow_label_custom].values) + [Q_t_fin]
+        #Q1 = [flow * 86400 for flow in Q1]
         measured_sediment_mass = np.trapz(y=Q1, dx=60) * mes[variablesdefinition.concentration_label].values[0]
         #print("sediments sum", measured_sediment_mass)
         #%gestion des intervalles au milieu
@@ -439,16 +440,16 @@ def measured_sediment_mass(streamflow, mes):
             # timeii = [np.datetime64(t_deb)] + list(streamflow[streamflow[variablesdefinition.datetime] < t_fin]
             #                                        [variablesdefinition.datetime].values
             #          ) + [datetime.toordinal(t_fin) + 366]
-            Qii = [Q_t_deb] + list(streamflow[(t_deb < streamflow[variablesdefinition.datetime]) & (streamflow[variablesdefinition.datetime] < t_fin)]
-                                   [variablesdefinition.streamflow_label_custom].values
-                     ) + [Q_t_fin]
-            Qii = [flow * 86400 for flow in Qii]
+            Qii = [Q_t_deb] + list(streamflow[(t_deb < streamflow[variablesdefinition.datetime]) &
+                                              (streamflow[variablesdefinition.datetime] < t_fin)]
+                                   [variablesdefinition.streamflow_label_custom].values) + [Q_t_fin]
+            #Qii = [flow * 86400 for flow in Qii]
             measured_sediment_mass += np.trapz(y=Qii, dx=60) * mes[variablesdefinition.concentration_label].values[i]
             #measured_sediment_mass += (np.trapz(timeii, Qii*86400) * mes[variablesdefinition.concentration_label].values[i])
 
         #% gestion du dernier interval
-        t_deb = dates.num2date(0.5*(dates.date2num(_mes_times[len(_mes_times)-2]) +
-                                dates.date2num(_mes_times[len(_mes_times)-1])
+        t_deb = dates.num2date(0.5*(dates.date2num(_mes_times[-2]) +
+                                dates.date2num(_mes_times[-1])
                                     )
                                ).replace(tzinfo=None)
         Q_t_deb = np.interp(dates.date2num(t_deb), _date_times,
@@ -458,10 +459,7 @@ def measured_sediment_mass(streamflow, mes):
         #              )
 
         Q2 = [Q_t_deb] + list(streamflow[t_deb < streamflow[variablesdefinition.datetime]]
-                              [variablesdefinition.streamflow_label_custom].values
-                     )
-        Q2 = [flow * 86400 for flow in Q2]
-        measured_sediment_mass += np.trapz(y=Q2, dx=60) * \
-                                  mes[variablesdefinition.concentration_label].values[len(_mes_times)-1]
-    #print("sum meas sead", measured_sediment_mass)
+                              [variablesdefinition.streamflow_label_custom].values)
+        #Q2 = [flow * 86400 for flow in Q2]
+        measured_sediment_mass += np.trapz(y=Q2, dx=60) * mes[variablesdefinition.concentration_label].values[-1]
     return measured_sediment_mass
