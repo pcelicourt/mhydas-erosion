@@ -423,7 +423,9 @@ class Model:
 
         graphics.sedimentograph(precipitation_data, infiltration_data, streamflow_data, self.Q_sortie_parcelle, self.mes,
                                 self.sed_mes, self.CALC_CONC_TR_LISEM, self.CALC_Sortie_MES_Parcelle,
-                                self.CALC_Prod_interne_Tr,
+                                self.CALC_Prod_interne_Tr, self.Cmax_mes, self.Cmax_cal,
+                                self.L_Pluie, self.L_Inf, self.L_Ruiss, self.Vol_mes, self.Vol_cal, self.Qmax_mes,
+                                self.Qmax_cal,  self.coeff_Nash,
                                 _global_parameters, _local_parameters
                                 )
         graphics.erosion_balance_per_block(self.splash_method, self.CALC_Prod_interne_Tr, _local_parameters,
@@ -434,14 +436,14 @@ class Model:
                                            self.Qmax_cal, self.L_Ruiss, self.coeff_Nash)
 
 
-if __name__ == '__main__':
-    new_model = Model(data_directory=default_data_file_dir)
-    new_model.set_parameters()
-    #new_model.set_sediment_production_parameters()
-    #new_model.get_hydrologic_balance()
-    #new_model.get_inflow_from_net_precipitation()
-    #new_model.get_hydrologic_balance()
-    new_model.create_sedimentograph()
+# if __name__ == '__main__':
+#     new_model = Model(data_directory=default_data_file_dir)
+#     new_model.set_parameters()
+#     #new_model.set_sediment_production_parameters()
+#     #new_model.get_hydrologic_balance()
+#     #new_model.get_inflow_from_net_precipitation()
+#     #new_model.get_hydrologic_balance()
+#     new_model.create_sedimentograph()
     # print(new_model.get_precipitation_data())
     # print(new_model.get_streamflow_data())
     # print(new_model.get_sediment_concentration_data())

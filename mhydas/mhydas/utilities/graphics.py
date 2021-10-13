@@ -5,7 +5,8 @@ import matplotlib.pyplot as plt
 import matplotlib
 from mhydas.mhydas.utilities import variablesdefinition
 
-sns.set(style="ticks", rc={"lines.linewidth": 0.5})
+sns.set(style="ticks", color_codes=True, rc={"lines.linewidth": 0.75})
+
 # def hydrograph():
 #     # function f_MHYDAS_UH_graphique_HYDRO(Pluie, infil, streamflow, Q_cal, PARAM)
 #     # % Tracé graphique Pluie, Débit mesuré et débit calculé
@@ -46,8 +47,9 @@ sns.set(style="ticks", rc={"lines.linewidth": 0.5})
 
 
 def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
-                   sed_mes, CALC_CONC_TR_LISEM, CALC_Sortie_MES_Parcelle, CALC_Prod_interne_Tr,
-                   global_parameters, local_parameters
+                    sed_mes, CALC_CONC_TR_LISEM, CALC_Sortie_MES_Parcelle, CALC_Prod_interne_Tr, Cmax_mes, Cmax_cal,
+                    L_Pluie, L_Inf, L_Ruiss, Vol_mes, Vol_cal, Qmax_mes, Qmax_cal, coeff_Nash,
+                    global_parameters, local_parameters
                     ):
     # function f_MHYDAS_UH_graphique_MES(Pluie, infil, streamflow, MES, Q_cal, SED_mes, CALC_Sortie_MES_Parcelle, CALC_CONC_TR_LISEM, CALC_Splash_Direct_Tot_Parcelle, CALC_Splash_Indirect_Tot_Parcelle, CALC_Splash_Effectif_Parcelle, CALC_Prod_interne_Tr, PARAM,metod)
     # % Tracé graphique : - pluie, hydrogrammes & turbidigrammes mesuré et simulé (FIGURE 2)
@@ -57,6 +59,21 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
     # % Fichier: f_MHYDAS_UH_graphique_MES.m
     #print("Q_sortie_parcelle", len(Q_sortie_parcelle), len(streamflow[variablesdefinition.timestamp].values))
     #global L_Pluie  L_Inf  Vol_mes  Vol_cal  Qmax_mes  Qmax_cal Cmax_mes  Cmax_cal  L_Ruiss  coeff_Nash
+    title_pluie = 'MHYDAS UH :  Pluie = {0} mm; Infiltration = {1} mm; ' \
+                  'Ruissellement = {2} mm'.format(round(L_Pluie,4), round(L_Inf,4), round(L_Ruiss,4))
+    xlabel = 'Temps (HH:MM)'
+    ylabel_pluie = 'Pluie. et Inf. m/s'
+
+    title_debit = 'Vmes = {0} m3; Vcal = {1} m3; Qmax mes = {2} m3/s ' \
+                  'Qmax cal = {3} m3/s; Nash = {4}'.format(round(Vol_mes,4), round(Vol_cal,4), round(Qmax_mes,4),
+                                                           round(Qmax_cal,4), round(coeff_Nash,4))
+    ylabel_debit = 'Débit (m3/s)'
+
+    title_erosion = ' Erosion mesurée = {0} kg; Erosion simulée =  {1} kg; Cmax mes =  {2} g/L;' \
+                  'Cmax cal = {3} g/L'.format(round(sed_mes,4), round(CALC_Sortie_MES_Parcelle,4),
+                                              round(Cmax_mes,4), round(Cmax_cal,4))
+    ylabel_erosion = 'MES (g/L)'
+
     main_time_stamps = Pluie[variablesdefinition.datetime].values
     data = pd.DataFrame({"timestamp": main_time_stamps,
                        "values": list(map(lambda value: value/global_parameters[variablesdefinition.dt],
@@ -94,9 +111,18 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
                        "data_categories": ["measured_erosion"]*len(measured_erosion)
                        }))
 
-    grid = sns.FacetGrid(data=data, col="data_group", hue="data_categories", height=10, aspect=4, col_wrap=1)
+    grid = sns.FacetGrid(data=data, col="data_group", hue="data_categories", height=4, aspect=3, col_wrap=1)
     grid.map(sns.lineplot, "timestamp", "values")
-
+    print(grid.axes)
+    titles = [title_pluie, title_debit, title_erosion]
+    ylabels = [ylabel_pluie, ylabel_debit, ylabel_erosion]
+    #xlabels = []
+    grid.fig.subplots_adjust(wspace=.25, hspace=.25)
+    for index, ax in enumerate(grid.axes.flatten()):
+        ax.set_ylabel(ylabels[index])
+        ax.set_title(titles[index])
+        ax.tick_params(labelbottom=True)
+        ax.set_xlabel(xlabel)
 
 def erosion_balance_per_block(splash_method, CALC_Prod_interne_Tr, local_parameters, global_parameters,
                               sed_mes, CALC_Sortie_MES_Parcelle, CALC_Splash_Effectif_Parcelle,
