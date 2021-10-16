@@ -75,9 +75,10 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
     ylabel_erosion = 'MES (g/L)'
 
     main_time_stamps = Pluie[variablesdefinition.datetime].values
+    precipitation_values = list(map(lambda value: value/global_parameters[variablesdefinition.dt],
+                                          Pluie[variablesdefinition.precipitation_label]))
     data = pd.DataFrame({"timestamp": main_time_stamps,
-                       "values": list(map(lambda value: value/global_parameters[variablesdefinition.dt],
-                                          Pluie[variablesdefinition.precipitation_label].values)),
+                       "values": precipitation_values,
                        "data_group": ["precipitation"]*len(Pluie[variablesdefinition.precipitation_label]),
                        "data_categories": ["precipitation"]*len(Pluie[variablesdefinition.precipitation_label])
                        })
@@ -87,8 +88,9 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
                        "data_group": ["precipitation"]*len(infil[variablesdefinition.infiltration_rate_label_custom].values),
                        "data_categories": ["infiltration"]*len(infil[variablesdefinition.infiltration_rate_label_custom].values)
                        }))
+    streamflow_values = streamflow[variablesdefinition.streamflow_label].values
     data = data.append(pd.DataFrame({"timestamp": streamflow[variablesdefinition.datetime].values,
-                       "values": streamflow[variablesdefinition.streamflow_label].values,
+                       "values": streamflow_values,
                        "data_group": ["flow"]*len(streamflow[variablesdefinition.streamflow_label].values),
                        "data_categories": ["measured_flow"]*len(streamflow[variablesdefinition.streamflow_label].values)
                        }))
@@ -98,31 +100,36 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
                        "data_categories": ["computed_flow"]*len(Q_sortie_parcelle)
                        }))
 
-    computed_erosion = CALC_CONC_TR_LISEM[:, int(local_parameters[variablesdefinition.nb_unit])-1]
+    computed_erosion_values = CALC_CONC_TR_LISEM[:, int(local_parameters[variablesdefinition.nb_unit])-1]
     data = data.append(pd.DataFrame({"timestamp": main_time_stamps,
-                       "values": computed_erosion,
-                       "data_group": ["erosion"]*len(computed_erosion),
-                       "data_categories": ["computed_erosion"]*len(computed_erosion)
+                       "values": computed_erosion_values,
+                       "data_group": ["erosion"]*len(computed_erosion_values),
+                       "data_categories": ["computed_erosion"]*len(computed_erosion_values)
                        }))
-    measured_erosion = mes[variablesdefinition.concentration_label].values
+    measured_erosion_values = mes[variablesdefinition.concentration_label].values
     data = data.append(pd.DataFrame({"timestamp": mes[variablesdefinition.datetime].values,
-                       "values": measured_erosion,
-                       "data_group": ["erosion"]*len(measured_erosion),
-                       "data_categories": ["measured_erosion"]*len(measured_erosion)
+                       "values": measured_erosion_values,
+                       "data_group": ["erosion"]*len(measured_erosion_values),
+                       "data_categories": ["measured_erosion"]*len(measured_erosion_values)
                        }))
 
-    grid = sns.FacetGrid(data=data, col="data_group", hue="data_categories", height=4, aspect=3, col_wrap=1)
+    grid = sns.FacetGrid(data=data, col="data_group", hue="data_categories", sharex=False, sharey=False,
+                         height=4, aspect=3, col_wrap=1)
     grid.map(sns.lineplot, "timestamp", "values")
-    print(grid.axes)
+    #print(grid.axes)
     titles = [title_pluie, title_debit, title_erosion]
     ylabels = [ylabel_pluie, ylabel_debit, ylabel_erosion]
-    #xlabels = []
+    x_dates = Pluie[variablesdefinition.datetime].dt.strftime('%H:%M').sort_values().unique()
+    y_ticks_ranges = [np.linspace(0, max(precipitation_values), 10), np.linspace(0, max(streamflow_values),10),
+                      np.linspace(0, max(measured_erosion_values), 10)]
     grid.fig.subplots_adjust(wspace=.25, hspace=.25)
     for index, ax in enumerate(grid.axes.flatten()):
         ax.set_ylabel(ylabels[index])
         ax.set_title(titles[index])
         ax.tick_params(labelbottom=True)
         ax.set_xlabel(xlabel)
+        ax.set_xticklabels(labels=x_dates)#, rotation=45, ha='right'
+        ax.set_yticks(y_ticks_ranges[index])
 
 def erosion_balance_per_block(splash_method, CALC_Prod_interne_Tr, local_parameters, global_parameters,
                               sed_mes, CALC_Sortie_MES_Parcelle, CALC_Splash_Effectif_Parcelle,

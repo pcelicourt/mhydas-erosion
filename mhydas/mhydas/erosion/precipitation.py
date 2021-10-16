@@ -11,7 +11,7 @@ number_of_seconds_per_minute = 60
 #% - - - - - - (mm/h) (mm/h) (mm/h)
 #1997	10	7	13	45	0	 0.50
 def disaggregate_date_time_from_minute_to_seconds(file_path, delimiter, dt):
-    columns = [variablesdefinition.datetime, variablesdefinition.timestamp, variablesdefinition.precipitation_label,
+    columns = [variablesdefinition.datetime, variablesdefinition.precipitation_label,
                variablesdefinition.precipitation_label_custom
             ]
     precipitation_data = pd.DataFrame(columns=columns)
@@ -21,8 +21,7 @@ def disaggregate_date_time_from_minute_to_seconds(file_path, delimiter, dt):
         for index, row in data.iterrows():
             for number_of_row in range(number_of_aggregates_per_minute):
                 _time = datetime(*(row.values[:5]), int(number_of_row * dt))
-                values = [_time, datetime.toordinal(_time) + 366,
-                          row.values[6], row.values[6] * 0.001 * dt / 3600
+                values = [_time, row.values[6], row.values[6] * 0.001 * dt/3600
                           ]
                 precipitation_data = precipitation_data.append(dict(zip(columns, values)), ignore_index=True)
         return precipitation_data
