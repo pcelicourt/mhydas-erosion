@@ -76,7 +76,7 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
 
     main_time_stamps = Pluie[variablesdefinition.datetime].values
     precipitation_values = list(map(lambda value: value/global_parameters[variablesdefinition.dt],
-                                          Pluie[variablesdefinition.precipitation_label]))
+                                          Pluie[variablesdefinition.precipitation_label_custom]))
     data = pd.DataFrame({"timestamp": main_time_stamps,
                        "values": precipitation_values,
                        "data_group": ["precipitation"]*len(Pluie[variablesdefinition.precipitation_label]),
@@ -114,9 +114,10 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
                        }))
 
     grid = sns.FacetGrid(data=data, col="data_group", hue="data_categories", sharex=False, sharey=False,
-                         height=4, aspect=3, col_wrap=1)
+                         despine=False, height=4, aspect=3, col_wrap=1)
     grid.map(sns.lineplot, "timestamp", "values")
-    #print(grid.axes)
+    print(list(map(lambda value: value/global_parameters[variablesdefinition.dt],
+                                          infil[variablesdefinition.infiltration_rate_label_custom].values)))
     titles = [title_pluie, title_debit, title_erosion]
     ylabels = [ylabel_pluie, ylabel_debit, ylabel_erosion]
     x_dates = Pluie[variablesdefinition.datetime].dt.strftime('%H:%M').sort_values().unique()

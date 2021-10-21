@@ -12,33 +12,35 @@ def morelseytouxmethod(precipitation, storage_and_suction_factor, parameters_as_
         precipitation_data_length = precipitation.shape[0]
         infiltration_capacity = np.zeros(precipitation_data_length)
         _net_precipitation = np.zeros(precipitation_data_length)
-        r = list(map(lambda _value: _value / parameters_as_dict[variablesdefinition.dt],
-                precipitation[variablesdefinition.precipitation_label_custom].values))
+        _precipitation_values = precipitation[variablesdefinition.precipitation_label_custom]
+        _dt = parameters_as_dict[variablesdefinition.dt]
+        r = list(map(lambda _value: _value / _dt,
+                _precipitation_values))
         re = list(map(lambda _value: _value / parameters_as_dict[variablesdefinition.ks], r))
 
         cumulative_precipitation = 0
         cond_sat = 0
-        _precipitation_values = precipitation[variablesdefinition.precipitation_label_custom].values
+        #_precipitation_values = precipitation[variablesdefinition.precipitation_label_custom].values
 
         index = 0
         while cond_sat < 1 and index <= (precipitation_data_length - 1):
             index += 1
             cumulative_precipitation += _precipitation_values[index-1]
             if re[index] > 1: #tp1 = (ii - 1) * PARAM.dt + (1 / r(ii)) * ((Sf / (re(ii) - 1) - som))
-                tp1 = index * parameters_as_dict[variablesdefinition.dt] + (1 / r[index]) * \
+                tp1 = index * _dt + (1 / r[index]) * \
                       (storage_and_suction_factor / (re[index] - 1) - cumulative_precipitation)
-                if tp1 <= (index+1) * parameters_as_dict[variablesdefinition.dt]: #(1 or 2)
-                    if tp1 > (index) * parameters_as_dict[variablesdefinition.dt]:# (index+1)
+                if tp1 <= (index+1) * _dt: #(1 or 2)
+                    if tp1 > (index) * _dt:# (index+1)
                         cas = 1
                         ip = index
                         tp = tp1
                         rp = r[index]
                         wp = cumulative_precipitation + \
-                             (tp1 - (index) * parameters_as_dict[variablesdefinition.dt]) * r[index]
+                             (tp1 - (index) * _dt) * r[index]
                         cond_sat = 2
                     else:
                         cas = 2
-                        tp = (index) * parameters_as_dict[variablesdefinition.dt]
+                        tp = (index) * _dt
                         ip = index-1
                         rp = (1 + storage_and_suction_factor / cumulative_precipitation) * \
                              parameters_as_dict[variablesdefinition.ks]
@@ -67,8 +69,8 @@ def morelseytouxmethod(precipitation, storage_and_suction_factor, parameters_as_
         #                      parameters_as_dict[variablesdefinition.ks]
         #                 wp = cumulative_precipitation
         #                 cond_sat = 3
-        time_steps = list(map(lambda i: (i+1) * parameters_as_dict[variablesdefinition.dt],
-                                  range(precipitation_data_length)))
+        # time_steps = list(map(lambda i: (i+1) * _dt,
+        #                           range(precipitation_data_length)))
 
         #dw = np.zeros(precipitation_data_length)
 
@@ -87,7 +89,7 @@ def morelseytouxmethod(precipitation, storage_and_suction_factor, parameters_as_
             innertime_steps = [0]*precipitation_data_length
             dw = [0]*precipitation_data_length
             for i in range(ip+1, precipitation_data_length):
-                innertime_steps.insert(i, (i+1) * parameters_as_dict[variablesdefinition.dt] - tp)
+                innertime_steps.insert(i, (i+1) * _dt - tp)
                 critere = 0
                 parameters_as_dict["dt1"] = dw1 * parameters_as_dict[variablesdefinition.beta] / \
                                             parameters_as_dict[variablesdefinition.ks] - \
@@ -117,7 +119,7 @@ def morelseytouxmethod(precipitation, storage_and_suction_factor, parameters_as_
             for i in range(ip+1, precipitation_data_length):
                 if r[i] > infiltration_capacity[i]:
                     _net_precipitation.append((r[i] - infiltration_capacity[i]) *
-                                              parameters_as_dict[variablesdefinition.dt])
+                                              _dt)
                 if r[i] <= infiltration_capacity[i]:
                     _net_precipitation.append(0)
         infiltration_capacity = pd.DataFrame({variablesdefinition.datetime: precipitation[variablesdefinition.datetime].values,
@@ -131,7 +133,7 @@ def morelseytouxmethod(precipitation, storage_and_suction_factor, parameters_as_
                                                                                                   _precipitation_values,
                                                                                                   _net_precipitation))})
 
-        return time_steps, infiltration_capacity, net_precipitation, infiltration
+        return [], infiltration_capacity, net_precipitation, infiltration
 
 def philipmethod():
     pass
