@@ -3,6 +3,8 @@ import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
 import matplotlib
+from PIL import Image, ImageDraw, ImageFont, ImageOps
+
 from mhydas.mhydas.utilities import variablesdefinition
 
 sns.set(style="ticks", color_codes=True, rc={"lines.linewidth": 0.75})
@@ -85,52 +87,52 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
     data = data.append(pd.DataFrame({"timestamp": infil[variablesdefinition.datetime].values,
                        "values": list(map(lambda value: value/global_parameters[variablesdefinition.dt],
                                           infil[variablesdefinition.infiltration_rate_label_custom].values)),
-                       "data_group": ["precipitation"]*len(infil[variablesdefinition.infiltration_rate_label_custom].values),
-                       "data_categories": ["infiltration"]*len(infil[variablesdefinition.infiltration_rate_label_custom].values)
+                       "data_group": ["precipitation"]*len(precipitation_values),
+                       "data_categories": ["infiltration"]*len(precipitation_values)
                        }))
-    streamflow_values = streamflow[variablesdefinition.streamflow_label].values
+    streamflow_values = streamflow[variablesdefinition.streamflow_label_custom].values
     data = data.append(pd.DataFrame({"timestamp": streamflow[variablesdefinition.datetime].values,
                        "values": streamflow_values,
-                       "data_group": ["flow"]*len(streamflow[variablesdefinition.streamflow_label].values),
-                       "data_categories": ["measured_flow"]*len(streamflow[variablesdefinition.streamflow_label].values)
+                       "data_group": ["flow"]*len(streamflow_values),
+                       "data_categories": ["measured flow"]*len(streamflow_values)
                        }))
     data = data.append(pd.DataFrame({"timestamp": main_time_stamps,
                        "values": Q_sortie_parcelle,
                        "data_group": ["flow"]*len(Q_sortie_parcelle),
-                       "data_categories": ["computed_flow"]*len(Q_sortie_parcelle)
+                       "data_categories": ["simulated flow"]*len(Q_sortie_parcelle)
                        }))
 
     computed_erosion_values = CALC_CONC_TR_LISEM[:, int(local_parameters[variablesdefinition.nb_unit])-1]
     data = data.append(pd.DataFrame({"timestamp": main_time_stamps,
                        "values": computed_erosion_values,
                        "data_group": ["erosion"]*len(computed_erosion_values),
-                       "data_categories": ["computed_erosion"]*len(computed_erosion_values)
+                       "data_categories": ["simulated erosion"]*len(computed_erosion_values)
                        }))
     measured_erosion_values = mes[variablesdefinition.concentration_label].values
     data = data.append(pd.DataFrame({"timestamp": mes[variablesdefinition.datetime].values,
                        "values": measured_erosion_values,
                        "data_group": ["erosion"]*len(measured_erosion_values),
-                       "data_categories": ["measured_erosion"]*len(measured_erosion_values)
+                       "data_categories": ["measured erosion"]*len(measured_erosion_values)
                        }))
 
     grid = sns.FacetGrid(data=data, col="data_group", hue="data_categories", sharex=False, sharey=False,
-                         despine=False, height=4, aspect=3, col_wrap=1)
+                         despine=False, height=4, aspect=3, col_wrap=1, legend_out=False)
     grid.map(sns.lineplot, "timestamp", "values")
-    print(list(map(lambda value: value/global_parameters[variablesdefinition.dt],
-                                          infil[variablesdefinition.infiltration_rate_label_custom].values)))
+    grid.add_legend()
     titles = [title_pluie, title_debit, title_erosion]
     ylabels = [ylabel_pluie, ylabel_debit, ylabel_erosion]
     x_dates = Pluie[variablesdefinition.datetime].dt.strftime('%H:%M').sort_values().unique()
     y_ticks_ranges = [np.linspace(0, max(precipitation_values), 10), np.linspace(0, max(streamflow_values),10),
                       np.linspace(0, max(measured_erosion_values), 10)]
     grid.fig.subplots_adjust(wspace=.25, hspace=.25)
-    for index, ax in enumerate(grid.axes.flatten()):
+    for index, ax in enumerate(grid.axes.ravel()):
         ax.set_ylabel(ylabels[index])
         ax.set_title(titles[index])
         ax.tick_params(labelbottom=True)
         ax.set_xlabel(xlabel)
         ax.set_xticklabels(labels=x_dates)#, rotation=45, ha='right'
         ax.set_yticks(y_ticks_ranges[index])
+        ax.legend()
 
 def erosion_balance_per_block(splash_method, CALC_Prod_interne_Tr, local_parameters, global_parameters,
                               sed_mes, CALC_Sortie_MES_Parcelle, CALC_Splash_Effectif_Parcelle,
@@ -141,39 +143,57 @@ def erosion_balance_per_block(splash_method, CALC_Prod_interne_Tr, local_paramet
     model_summary = [' BILAN PAR TRONCON : Modèle {0} \n'.format(splash_method),
                      '  Internal production  (kg) in {0} elementary units \n'.format(
                          int(local_parameters[variablesdefinition.nb_unit])),
-                     ' {0} {1}  {2}   (kg)'.format(*CALC_Prod_interne_Tr),
-                     ' {0} {1}  {2}   (mm)'.format(*list(map(lambda _calculated_internal_production:
+                     '  {0} {1}  {2}   (kg) \n'.format(*[round(x, 4) for x in CALC_Prod_interne_Tr]),
+                     '  {0} {1}  {2}   (mm) \n'.format(*list(map(lambda _calculated_internal_production:
                                                             round(_calculated_internal_production * 1000 / (
                                  local_parameters[variablesdefinition.dens_sed] * 1000 *
                                  local_parameters[variablesdefinition.long_uh] *
                                  local_parameters[variablesdefinition.larg_rill] *
                                  local_parameters[variablesdefinition.nb_motifs]), 4), CALC_Prod_interne_Tr))),
-                     ' --------------------------------------------',
-                     ' BILAN A LA PARCELLE',
-                     '    Erosion mesurée = {0}  kg <=>  {1}  t/ha'.format(round(sed_mes, 4),
+                     ' -------------------------------------------- \n',
+                     ' BILAN A LA PARCELLE \n',
+                     '    Erosion mesurée = {0}  kg <=>  {1}  t/ha \n'.format(round(sed_mes, 4),
                                             round(10 * sed_mes / (local_parameters[variablesdefinition.long_uh] *
                                             local_parameters[variablesdefinition.larg_uh]), 4)),
-                     '    Erosion simulée = {0}  kg <=>  {1}  t/ha'.format(round(CALC_Sortie_MES_Parcelle, 4),
+                     '    Erosion simulée = {0}  kg <=>  {1}  t/ha \n'.format(round(CALC_Sortie_MES_Parcelle, 4),
                      round(10 * CALC_Sortie_MES_Parcelle / (local_parameters[variablesdefinition.long_uh] *
                                            local_parameters[variablesdefinition.larg_uh]), 4)),
-                     '    Bilan Erosion diffuse = {0}  kg <=> {1} mm'.format(round(CALC_Splash_Effectif_Parcelle, 4),
+                     '    Bilan Erosion diffuse = {0}  kg <=> {1} mm \n'.format(round(CALC_Splash_Effectif_Parcelle, 4),
                                                                              round(
             CALC_Splash_Effectif_Parcelle / (local_parameters[variablesdefinition.dens_sed] * 1000 *
                                              local_parameters[variablesdefinition.long_uh] *
                                              local_parameters[variablesdefinition.larg_uh]) * 1000, 4)),
-                     '    Bilan Erosion concentrée = {0} kg'.format(round(sum(CALC_Prod_interne_Tr))),
-                     '    Bilan Masse = {0} kg <=> {1}  % de Erosion simulée'.format(
+                     '    Bilan Erosion concentrée = {0} kg \n'.format(round(sum(CALC_Prod_interne_Tr))),
+                     '    Bilan Masse = {0} kg <=> {1}  % de Erosion simulée \n'.format(
             round(CALC_Sortie_MES_Parcelle - (CALC_Splash_Effectif_Parcelle + sum(CALC_Prod_interne_Tr)), 4),
                       round(((CALC_Sortie_MES_Parcelle - (CALC_Splash_Effectif_Parcelle + sum(
                          CALC_Prod_interne_Tr))) / CALC_Sortie_MES_Parcelle) * 100, 4)),
-                     ' Splash total sur sol nu = {0} kg'.format(round(CALC_Splash_Direct_Tot_Parcelle, 4)),
-                     ' Splash total sous couvert végétal = {0} kg'.format(round(CALC_Splash_Indirect_Tot_Parcelle, 4)),
-                     ' Coef de Nash = {0}'.format(round(coeff_Nash, 4))
+                     ' Splash total sur sol nu = {0} kg \n'.format(round(CALC_Splash_Direct_Tot_Parcelle, 4)),
+                     ' Splash total sous couvert végétal = {0} kg \n'.format(round(CALC_Splash_Indirect_Tot_Parcelle, 4)),
+                     ' Coef de Nash = {0} \n'.format(round(coeff_Nash, 4))
 
                      ]
-    for element in model_summary:
-        print(element)
 
+    img = Image.new('RGB', (700, 450), color=(255, 255, 255))
+    d = ImageDraw.Draw(img)
+    text_font = ImageFont.truetype("times.ttf", size=20)
+    y_text = 50
+    image_width, image_height = img.size
+    for line in model_summary:
+        line_width, line_height = text_font.getsize(line)
+        d.text(((image_width - line_width) / 2, y_text), line, font=text_font, fill=(0, 0, 0))
+        y_text += line_height
+
+    img = ImageOps.expand(img, border=2, fill='black')#.save('imaged-with-border.png')
+    img = ImageOps.expand(img, border=50, fill=(255, 255, 255))
+    draw = ImageDraw.Draw(img)
+    image_width, image_height = img.size
+    title_font = ImageFont.truetype("times.ttf", 28)
+    title = "Bilan sur la parcelle"
+    line_width, line_height = title_font.getsize(title)
+    draw.text(((image_width - line_width) / 2, 20), title, fill=(0, 0, 0), font=title_font)
+    img.save('summaryresults.jpg')
+    img.show()
 
     #
     # Text1{end+1} = ['    ' num2str(round(CALC_Prod_interne_Tr)) '    (kg)'];
