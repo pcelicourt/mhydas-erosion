@@ -5,6 +5,7 @@ from datetime import datetime
 import matplotlib.dates as dates
 import numpy as np
 import scipy.integrate as spi
+from scipy import interpolate
 
 from mhydas.mhydas.utilities import variablesdefinition
 
@@ -408,12 +409,16 @@ def measured_sediment_mass(streamflow, mes):
         #print(t_fin, streamflow[variablesdefinition.timestamp])
         # time1 = list(streamflow[streamflow[variablesdefinition.datetime] < t_fin][variablesdefinition.timestamp].values
         #              ) + [datetime.toordinal(t_fin) + 366]
-        #print(dates.date2num(t_fin))
+        #print(dates.date2num(t_fin)) dates.date2num(t_fin), _date_times,
         _date_times = list(map(lambda _time: dates.date2num(_time),
                                                                streamflow[variablesdefinition.datetime].values))
-        Q_t_fin = np.interp(dates.date2num(t_fin), _date_times,
-                           streamflow[variablesdefinition.streamflow_label_custom].values
-                            )
+        print(np.array(dates.date2num(t_fin)), _date_times,streamflow[variablesdefinition.streamflow_label_custom].values)
+        interpolator = interpolate.interp1d(_date_times,
+                           streamflow[variablesdefinition.streamflow_label_custom].values)
+        Q_t_fin = interpolator(dates.date2num(t_fin))
+        # Q_t_fin = np.interp(np.array(dates.date2num(t_fin)), _date_times,
+        #                    streamflow[variablesdefinition.streamflow_label_custom].values
+        #                     )
 
         Q1 = list(streamflow[streamflow[variablesdefinition.datetime] < t_fin]
                   [variablesdefinition.streamflow_label_custom].values) + [Q_t_fin]
@@ -431,12 +436,14 @@ def measured_sediment_mass(streamflow, mes):
                                 dates.date2num(_mes_times[i+1])
                                     )
                                ).replace(tzinfo=None)
-            Q_t_deb = np.interp(dates.date2num(t_deb), _date_times,
-                           streamflow[variablesdefinition.streamflow_label_custom].values
-                            )
-            Q_t_fin = np.interp(dates.date2num(t_fin), _date_times,
-                           streamflow[variablesdefinition.streamflow_label_custom].values
-                            )
+            Q_t_deb = interpolator(dates.date2num(t_deb))
+            # Q_t_deb = np.interp(dates.date2num(t_deb), _date_times,
+            #                streamflow[variablesdefinition.streamflow_label_custom].values
+            #                 )
+            Q_t_fin = interpolator(dates.date2num(t_fin))
+            # Q_t_fin = np.interp(dates.date2num(t_fin), _date_times,
+            #                streamflow[variablesdefinition.streamflow_label_custom].values
+            #                 )
             # timeii = [np.datetime64(t_deb)] + list(streamflow[streamflow[variablesdefinition.datetime] < t_fin]
             #                                        [variablesdefinition.datetime].values
             #          ) + [datetime.toordinal(t_fin) + 366]
@@ -452,8 +459,9 @@ def measured_sediment_mass(streamflow, mes):
                                 dates.date2num(_mes_times[-1])
                                     )
                                ).replace(tzinfo=None)
-        Q_t_deb = np.interp(dates.date2num(t_deb), _date_times,
-                           streamflow[variablesdefinition.streamflow_label_custom].values)
+        Q_t_deb = interpolator(dates.date2num(t_deb))
+        # Q_t_deb = np.interp(dates.date2num(t_deb), _date_times,
+        #                    streamflow[variablesdefinition.streamflow_label_custom].values)
         # time2 = [np.datetime64(t_deb)] + list(streamflow[t_deb < streamflow[variablesdefinition.datetime]
         #                                       ][variablesdefinition.datetime].values
         #              )

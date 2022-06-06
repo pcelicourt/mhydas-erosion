@@ -121,7 +121,7 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
     grid.add_legend()
     titles = [title_pluie, title_debit, title_erosion]
     ylabels = [ylabel_pluie, ylabel_debit, ylabel_erosion]
-    x_dates = Pluie[variablesdefinition.datetime].dt.strftime('%H:%M').sort_values().unique()
+    x_dates = Pluie[variablesdefinition.datetime].apply(lambda x: x.strftime('%H:%M')).sort_values().unique()
     y_ticks_ranges = [np.linspace(0, max(precipitation_values), 10), np.linspace(0, max(streamflow_values),10),
                       np.linspace(0, max(measured_erosion_values), 10)]
     grid.fig.subplots_adjust(wspace=.25, hspace=.25)
@@ -130,7 +130,7 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
         ax.set_title(titles[index])
         ax.tick_params(labelbottom=True)
         ax.set_xlabel(xlabel)
-        ax.set_xticklabels(labels=x_dates)#, rotation=45, ha='right'
+        ax.set_xticklabels(labels=x_dates, rotation=45, ha='right')
         ax.set_yticks(y_ticks_ranges[index])
         ax.legend()
 
