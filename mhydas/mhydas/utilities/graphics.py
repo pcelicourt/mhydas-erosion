@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import seaborn as sns
+from matplotlib import ticker
 import matplotlib.pyplot as plt
 import matplotlib
 from PIL import Image, ImageDraw, ImageFont, ImageOps
@@ -130,9 +131,13 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
         ax.set_title(titles[index])
         ax.tick_params(labelbottom=True)
         ax.set_xlabel(xlabel)
-        ax.set_xticklabels(labels=x_dates, rotation=45, ha='right')
+        ax.xaxis.set_major_locator(ticker.FixedLocator(list(range(len(x_dates)))))
+        ax.xaxis.set_major_formatter(ticker.FixedFormatter(x_dates))
+        #ax.set_xticklabels(labels=x_dates)
         ax.set_yticks(y_ticks_ranges[index])
         ax.legend()
+    plt.savefig("./sedimentograph.jpg", dpi=150)
+    plt.show()
 
 def erosion_balance_per_block(splash_method, CALC_Prod_interne_Tr, local_parameters, global_parameters,
                               sed_mes, CALC_Sortie_MES_Parcelle, CALC_Splash_Effectif_Parcelle,
@@ -192,7 +197,7 @@ def erosion_balance_per_block(splash_method, CALC_Prod_interne_Tr, local_paramet
     title = "Bilan sur la parcelle"
     line_width, line_height = title_font.getsize(title)
     draw.text(((image_width - line_width) / 2, 20), title, fill=(0, 0, 0), font=title_font)
-    img.save('summaryresults.jpg')
+    img.save('./summaryresults.jpg')
     img.show()
 
     #
