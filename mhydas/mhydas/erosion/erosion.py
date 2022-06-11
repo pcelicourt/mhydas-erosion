@@ -20,10 +20,12 @@ class Model:
             self.data_directory = data_directory
         else:
             self.data_directory = default_data_file_dir
-
-        self.default_main_config_file_name = "config.ini"
-        self.default_global_param_config_file_name = "global_parameters.ini"
-        self.default_specific_param_config_file_name = "local_parameters.ini"
+        if not main_config_file_name:
+            self.default_main_config_file_name = "config.ini"
+            self.default_global_param_config_file_name = "global_parameters.ini"
+            self.default_specific_param_config_file_name = "local_parameters.ini"
+        else:
+            self.default_main_config_file_name = main_config_file_name
         self.parameters = {}
         self.kteste = 1
         self.net_precipitation = pd.DataFrame()
@@ -44,7 +46,7 @@ class Model:
             self.main_config_file_path = self.check_file_existence(main_config_file_path)
 
         if self.main_config_file_path:
-            self.main_config_file_content = filesmanager.read_main_config_file(self.main_config_file_path)
+            self.main_config_file_content = filesmanager.read_config_file(self.main_config_file_path)
             self.global_param_config_file_path = self.main_config_file_content.get(variablesdefinition.global_param)
             self.local_param_config_file_path = self.main_config_file_content.get(variablesdefinition.local_param)
         else:

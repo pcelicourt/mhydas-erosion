@@ -4,7 +4,32 @@ import os
 import errno
 
 
-def read_main_config_file(file_path):
+def read_master_config_file(file_path):
+    config = configparser.ConfigParser()
+    config_file_paths = []
+    if os.path.exists(file_path):
+        data_directory = os.path.dirname(os.path.abspath(file_path))
+        config.read(file_path)
+        config_file_sections = config.sections()
+        if config_file_sections:
+            for key in config_file_sections:
+                for sub_key in config[key]:
+                    config_files_list = config[key][sub_key]
+                    sep = [x for x in [",", ";"] if x in config_files_list]
+                    if len(sep):
+                        sep = sep[0]
+                        config_files = [_file_name.strip() for _file_name in config_files_list.split(sep)]
+                        #config_file_paths = [os.path.join(data_directory, _file_name) for _file_name in config_files]
+                        #print(config_file_paths)
+                    else:
+                        config_files = config[key][sub_key]
+        else:
+            pass
+        return config_files
+    else:
+        file_not_found_error(file_path)
+
+def read_config_file(file_path):
     config = configparser.ConfigParser()
     file_content = {}
     if os.path.exists(file_path):
@@ -17,7 +42,7 @@ def read_main_config_file(file_path):
                 for sub_key in config[key]:
                     file_content[sub_key] = os.path.join(data_directory, config[key][sub_key])
         else:
-            print(config_file_sections)
+            pass
         return file_content
     else:
         file_not_found_error(file_path)
