@@ -2,7 +2,7 @@ import numpy as np
 
 from mhydas.mhydas.utilities import variablesdefinition
 
-def mean_weight_diameter(precipitation, inflow_unit, Q_CALC_UNIT, unit_width, unit_length, SDR_ajust_Q,
+def mean_weight_diameter(precipitation, inflow_unit, Q_CALC_UNIT, unit_area, SDR_ajust_Q,
                           global_param_as_dict,local_param_as_dict,KE_nu, KE_couv, kteste):
     # function [SPLASH_CALC_UNIT_LISEM, CONC_SPLASH, Splash_Unit_LISEM, Splash_direct, Splash_indirect] = f_MHYDAS_UH_Splash_MWD_Erosion(precipitation, inflow_unit, Q_CALC_UNIT, unit_width, unit_length, SDR_ajust_Q, PARAM,KE_nu, KE_couv, kteste)
     #
@@ -61,12 +61,12 @@ def mean_weight_diameter(precipitation, inflow_unit, Q_CALC_UNIT, unit_width, un
                 _splash_direct = (2.1e-4/local_param_as_dict[variablesdefinition.mwd] * kteste) * KE_nu[j] * \
                                  precipitation_values[j] * \
                                         (1-local_param_as_dict[variablesdefinition.surf_couvert]) * \
-                                        unit_width * unit_length
+                                        unit_area
 
                 Splash_direct.append(_splash_direct)
                 _splash_indirect = (2.1e-4/local_param_as_dict[variablesdefinition.mwd])*KE_couv * \
                                        precipitation_values[j] * \
-                        local_param_as_dict[variablesdefinition.surf_couvert]*unit_width*unit_length
+                        local_param_as_dict[variablesdefinition.surf_couvert]*unit_area
 
                 Splash_indirect.append(_splash_indirect)
 

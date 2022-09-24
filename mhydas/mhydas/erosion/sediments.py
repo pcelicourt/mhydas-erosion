@@ -4,11 +4,27 @@ from datetime import datetime
 
 import matplotlib.dates as dates
 import numpy as np
-import scipy.integrate as spi
+#import scipy.integrate as spi
 from scipy import interpolate
+import pandas as pd
 
 from mhydas.mhydas.utilities import variablesdefinition
 
+
+def get_sediment_concentration_data(data_path):
+    columns = [variablesdefinition.datetime, variablesdefinition.concentration_label]
+    mes_concentration_data = pd.DataFrame(columns=columns)
+    data = pd.read_csv(data_path,
+                       sep="\t", skiprows=3, header=None
+                       ).convert_dtypes()
+    for index, row in data.iterrows():
+        _time = datetime(*list(map(int, row.values[:6])))
+        values = [_time, row.values[6]] #datetime.toordinal(_time) + 366,
+        #mes_concentration_data = mes_concentration_data.append(dict(zip(columns, values)), ignore_index=True)
+        mes_concentration_data = pd.concat([mes_concentration_data, 
+                                                pd.DataFrame.from_records([dict(zip(columns, values))])], 
+                                               ignore_index=True, sort=False)
+    return mes_concentration_data
 
 def adjusted_sediment_discharge_ratio(global_parameters_as_dict, local_parameters_as_dict, net_rainfall):
     # function [SDR_ajust_Q] = f_MHYDAS_UH_SDR_ajust_Q (net_precipitation, PARAM)
@@ -45,10 +61,10 @@ def adjusted_sediment_discharge_ratio(global_parameters_as_dict, local_parameter
     # %end
 
 
-def sediment_production_per_time_interval(j, i, Masse_antecedent, Apport_Splash, Apport_Amont, Perte_Aval, conc_antecedent,
-                                          pente_Tr, Vitesse_Eau_Tr, Long_unit, cc, dd, betha, global_parameters_as_dict,
+def sediment_production_per_time_interval(Masse_antecedent, Apport_Splash, Apport_Amont, Perte_Aval, conc_antecedent,
+                                          unit_slope, Vitesse_Eau_Tr, unit_length, cc, dd, betha, global_parameters_as_dict,
                                           local_parameters_as_dict):
-    #function [unit_flow_lisem, tc_lisem] = f_MHYDAS_UH_Flow_LISEM_Erosion(Masse_antecedent, Apport_Splash, Apport_Amont, Perte_Aval, conc_antecedent, pente_Tr, Vitesse_Eau_Tr, Long_unit, cc, dd, betha, PARAM, kteste)
+    #function [unit_flow_lisem, tc_lisem] = f_MHYDAS_UH_Flow_LISEM_Erosion(Masse_antecedent, Apport_Splash, Apport_Amont, Perte_Aval, conc_antecedent, unit_slope, Vitesse_Eau_Tr, unit_length, cc, dd, betha, PARAM, kteste)
     # % Calcul du dépôt OU de la production de sédiments par le ruissellement à chaque pas de temps
     # % et sur chaque unité élémentaire avec les équations de LISEM (kg/pas de temps)
     # % Auteurs: Gumiere.,S.J., D. Raclot & G. Davy
@@ -89,11 +105,11 @@ def sediment_production_per_time_interval(j, i, Masse_antecedent, Apport_Splash,
     # % Apport_Amont     : masse de sédiment provenant du tronçon amont entre t-1 et t (kg)
     # % Perte_Aval       : masse de sédiment sortant du tronçon entre t-1 et t (kg)
     # % conc_antecedent  : Concentration en sédiments au pas de temps précedent (g/l ou kg/m3)
-    # % pente_Tr         : pente (m/m) --> provient du vecteur pente_unit
+    # % unit_slope         : pente (m/m) --> provient du vecteur pente_unit
     # % Hauteur_Eau_Tr   : Hauteur d'eau dans le tronçon au pas de temps considéré (m)
     # % Vitesse_Eau_Tr   : Vitesse de l'eau dans le tronçon au pas de temps considéré (m/s)
     # % Debit_Tr         : Débit d'entrée dans le tronçon au pas de temps considéré (m3/s)
-    # % Long_unit        : longueur d'une unité élémentaire (m)
+    # % unit_length        : longueur d'une unité élémentaire (m)
     # %-----------    PARAM   ---------------
     # % AGGRSTAB_LISEM   : Paramètre  d'érodibilité "stabilité structurale" --> nb de gouttes pour diminuer de moitié la taille des agrégats
     # % Dens_Sed         : Densité des sédiments  --> local_parameters_as_dict[variablesdefinition.dens_ed]
@@ -117,7 +133,7 @@ def sediment_production_per_time_interval(j, i, Masse_antecedent, Apport_Splash,
 
     tc_lisem = 0
     #% 1) Comparaison entre Stream Power (w) & Critical Stream Power (wc)
-    Delta_Stream_Pow = Vitesse_Eau_Tr*100*pente_Tr-0.4#; % De roo and Wesseling - HP - 1996(10)1107-1117
+    Delta_Stream_Pow = Vitesse_Eau_Tr*100*unit_slope-0.4#; % De roo and Wesseling - HP - 1996(10)1107-1117
 
     #% Calcul du diamètre spécifique de la particule (Loi de Soulsby)
     D_specifique = ((((local_parameters_as_dict[variablesdefinition.dens_sed]-
@@ -131,7 +147,7 @@ def sediment_production_per_time_interval(j, i, Masse_antecedent, Apport_Splash,
     #%Vit_depot = Vit_depot * PARAM.Coeff_Phi;
     if Delta_Stream_Pow < 0:# % Puissance de ruissellement insuffisante pour transporter les particules
         unit_flow_lisem = -(local_parameters_as_dict[variablesdefinition.larg_rill] * conc_antecedent * Vit_depot *
-                            Long_unit) * global_parameters_as_dict[variablesdefinition.dt]#; % DEPOT : w*C*Vs*dx*dt (dépot en Kg/pas de temps)
+                            unit_length) * global_parameters_as_dict[variablesdefinition.dt]#; % DEPOT : w*C*Vs*dx*dt (dépot en Kg/pas de temps)
         if unit_flow_lisem < -Masse_antecedent - Apport_Splash - Apport_Amont + Perte_Aval:
             unit_flow_lisem = -Masse_antecedent - Apport_Splash - Apport_Amont + Perte_Aval#;
     else:
@@ -142,19 +158,19 @@ def sediment_production_per_time_interval(j, i, Masse_antecedent, Apport_Splash,
             #% Equation de dépôt pour les version de LISEM 2.02 et antérieures
             unit_flow_lisem = (tc_lisem-conc_antecedent) * Vit_depot * \
                               local_parameters_as_dict[variablesdefinition.larg_rill] * \
-                              Long_unit*global_parameters_as_dict[variablesdefinition.dt]#; % DEPOT : (Tc-C)Vs*w*dx
+                              unit_length * global_parameters_as_dict[variablesdefinition.dt]#; % DEPOT : (Tc-C)Vs*w*dx
             if unit_flow_lisem < -Masse_antecedent - Apport_Splash - Apport_Amont + Perte_Aval:
                 unit_flow_lisem = -Masse_antecedent - Apport_Splash - Apport_Amont + Perte_Aval#;
 
         else:
-            unit_flow_lisem = betha * (tc_lisem-conc_antecedent)*Vit_depot * \
-                              local_parameters_as_dict[variablesdefinition.larg_rill] * Long_unit * \
+            unit_flow_lisem = betha * (tc_lisem-conc_antecedent)* Vit_depot * \
+                              local_parameters_as_dict[variablesdefinition.larg_rill] * unit_length * \
                               global_parameters_as_dict[variablesdefinition.dt]#; % ARRACHEMENT
 
     return unit_flow_lisem, tc_lisem
 
 def sediments_concentration_per_unit(SPLASH_CALC_UNIT_LISEM, H_CALC_UNIT,  V_CALC_UNIT, Q_CALC_UNIT,
-                                                       Q_CALC_SORTIE, unit_length, unit_width,
+                                                       Q_CALC_SORTIE, unit_length, unit_area,
                                                        unit_slope, net_precipitation,
                                                         global_parameters_as_dict, local_parameters_as_dict):
     # function [CALC_CONC_TR_LISEM, CALC_PROD_INTERNE, MASSE_SED, CALC_TC_LISEM, CALC_VOL_TR_LISEM] = f_MHYDAS_UH_Conc_Tr_LISEM_bilan(SPLASH_CALC_UNIT_LISEM, H_CALC_UNIT, V_CALC_UNIT, Q_CALC_UNIT, Q_CALC_SORTIE, unit_length, unit_width, unit_slope, net_precipitation, PARAM, kteste)
@@ -203,6 +219,7 @@ def sediments_concentration_per_unit(SPLASH_CALC_UNIT_LISEM, H_CALC_UNIT,  V_CAL
     # %bilan volume
 
     nb_unit = int(local_parameters_as_dict[variablesdefinition.nb_unit])
+    unit_slope = local_parameters_as_dict[variablesdefinition.pente_uh]
     data_length = len(Q_CALC_UNIT)
     CALC_VOL_TR_LISEM = np.empty(shape=(data_length, nb_unit))
     CALC_VOL_TR_LISEM[0] = [0] * nb_unit
@@ -211,13 +228,13 @@ def sediments_concentration_per_unit(SPLASH_CALC_UNIT_LISEM, H_CALC_UNIT,  V_CAL
     CALC_PROD_INTERNE = np.empty(shape=(data_length, nb_unit))
     CALC_PROD_INTERNE[0] = [0] * nb_unit
 
-    MASSE_SED = np.empty(shape=(data_length, nb_unit+1))
+    MASSE_SED = np.empty(shape=(data_length, nb_unit + 1))
     MASSE_SED[0] = [0] * (nb_unit+1)
 
     CALC_TC_LISEM = np.empty(shape=(data_length, nb_unit))
     CALC_TC_LISEM[0] = [0] * nb_unit
 
-    CALC_CONC_TR_LISEM = np.empty(shape=(data_length, nb_unit+1))
+    CALC_CONC_TR_LISEM = np.empty(shape=(data_length, nb_unit + 1))
     CALC_CONC_TR_LISEM[0] = [0] * (nb_unit + 1)
 
     # % ******   CALCUL DE PARAMETRES INTERMEDIAIRES CONSTANTS POUR PRODUCTION INTERNE EN SEDIMENTS   *****
@@ -238,11 +255,11 @@ def sediments_concentration_per_unit(SPLASH_CALC_UNIT_LISEM, H_CALC_UNIT,  V_CAL
                 #% Apport d'eau latéral par ruissellement sur zone diffuse en m3/pas de temps --> Q_entree_unit
                 if i == 0:
                     Volume_Splash = 0.5 * net_precipitation_values[j-1] * \
-                                    unit_length * unit_width
+                                    unit_area
                     Volume_Amont = 0  # ;
                 else:
                     Volume_Splash = net_precipitation_values[j-1] * \
-                                    unit_length * unit_width
+                                    unit_area
                     Volume_Amont = Q_CALC_SORTIE[j-1][i-1] * global_parameters_as_dict[variablesdefinition.dt]
 
                 #% Apport d'eau à l'amont du tronçon (débit de sortie du tronçon précédent) en m3/pas de temps --> Q_CALC_SORTIE (t-1,Tr-1)
@@ -277,10 +294,10 @@ def sediments_concentration_per_unit(SPLASH_CALC_UNIT_LISEM, H_CALC_UNIT,  V_CAL
                                     global_parameters_as_dict[variablesdefinition.dt]
                  #% Sortie de sédiments à l'aval du tronçon en Kg/pas de temps --> Q_CALC_SORTIE (t-1,Tr)
                  Perte_Aval = CALC_CONC_TR_LISEM[j-1][i] * Q_CALC_SORTIE[j-1][i] * global_parameters_as_dict[variablesdefinition.dt]#;
-                 Prod_interne, tc_lisem = sediment_production_per_time_interval(j, i, Masse_antecedent, Apport_Splash,
+                 Prod_interne, tc_lisem = sediment_production_per_time_interval(Masse_antecedent, Apport_Splash,
                                                                                Apport_Amont, Perte_Aval,
                                                                                CALC_CONC_TR_LISEM[j-1][i],
-                                                                               unit_slope[i], V_CALC_UNIT[j-1][i],
+                                                                               unit_slope, V_CALC_UNIT[j-1][i],
                                                                                unit_length, cc, dd, betha,
                                                                                global_parameters_as_dict,
                                                                                local_parameters_as_dict)
@@ -409,16 +426,12 @@ def measured_sediment_mass(streamflow, mes):
         #print(t_fin, streamflow[variablesdefinition.timestamp])
         # time1 = list(streamflow[streamflow[variablesdefinition.datetime] < t_fin][variablesdefinition.timestamp].values
         #              ) + [datetime.toordinal(t_fin) + 366]
-        #print(dates.date2num(t_fin)) dates.date2num(t_fin), _date_times,
+        #print(dates.date2num(t_fin))
         _date_times = list(map(lambda _time: dates.date2num(_time),
                                                                streamflow[variablesdefinition.datetime].values))
-        print(np.array(dates.date2num(t_fin)), _date_times,streamflow[variablesdefinition.streamflow_label_custom].values)
-        interpolator = interpolate.interp1d(_date_times,
-                           streamflow[variablesdefinition.streamflow_label_custom].values)
-        Q_t_fin = interpolator(dates.date2num(t_fin))
-        # Q_t_fin = np.interp(np.array(dates.date2num(t_fin)), _date_times,
-        #                    streamflow[variablesdefinition.streamflow_label_custom].values
-        #                     )
+        Q_t_fin = np.interp(dates.date2num(t_fin), _date_times,
+                           streamflow[variablesdefinition.streamflow_label_custom].values
+                            )
 
         Q1 = list(streamflow[streamflow[variablesdefinition.datetime] < t_fin]
                   [variablesdefinition.streamflow_label_custom].values) + [Q_t_fin]
@@ -436,14 +449,12 @@ def measured_sediment_mass(streamflow, mes):
                                 dates.date2num(_mes_times[i+1])
                                     )
                                ).replace(tzinfo=None)
-            Q_t_deb = interpolator(dates.date2num(t_deb))
-            # Q_t_deb = np.interp(dates.date2num(t_deb), _date_times,
-            #                streamflow[variablesdefinition.streamflow_label_custom].values
-            #                 )
-            Q_t_fin = interpolator(dates.date2num(t_fin))
-            # Q_t_fin = np.interp(dates.date2num(t_fin), _date_times,
-            #                streamflow[variablesdefinition.streamflow_label_custom].values
-            #                 )
+            Q_t_deb = np.interp(dates.date2num(t_deb), _date_times,
+                           streamflow[variablesdefinition.streamflow_label_custom].values
+                            )
+            Q_t_fin = np.interp(dates.date2num(t_fin), _date_times,
+                           streamflow[variablesdefinition.streamflow_label_custom].values
+                            )
             # timeii = [np.datetime64(t_deb)] + list(streamflow[streamflow[variablesdefinition.datetime] < t_fin]
             #                                        [variablesdefinition.datetime].values
             #          ) + [datetime.toordinal(t_fin) + 366]
@@ -459,9 +470,8 @@ def measured_sediment_mass(streamflow, mes):
                                 dates.date2num(_mes_times[-1])
                                     )
                                ).replace(tzinfo=None)
-        Q_t_deb = interpolator(dates.date2num(t_deb))
-        # Q_t_deb = np.interp(dates.date2num(t_deb), _date_times,
-        #                    streamflow[variablesdefinition.streamflow_label_custom].values)
+        Q_t_deb = np.interp(dates.date2num(t_deb), _date_times,
+                           streamflow[variablesdefinition.streamflow_label_custom].values)
         # time2 = [np.datetime64(t_deb)] + list(streamflow[t_deb < streamflow[variablesdefinition.datetime]
         #                                       ][variablesdefinition.datetime].values
         #              )

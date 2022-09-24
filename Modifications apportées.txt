@@ -1,0 +1,29 @@
+### local_param.csv ###
+
+Changement de la variable nb_unit de 3.0 à 1.0 (une pente au lieu de 3)
+
+### global_param.ini ###
+
+Changement de la variable dx de 3 à 1 (une pente au lieu de 3)
+
+### erosion_BV.py ###
+
+17-01-2022:
+- Modification de la fct set_local_paramameters () de façon à lire un fichier
+  CSV contenant les paramètres locaux plutôt que le fichier local_param.ini
+- Modification de la fct set_sediment_production_parameters() en remplaçant les
+  trois profils de pente par la valeur moyenne du UH, issu du local_param.CSV
+- Modification de la fct get_inflow_from_net_precipitation() en remplaçant: 
+	(1) Les trois profils de pente par la valeur moyenne du UH, 
+	   issu du local_param.CSV
+
+	(2) La celerité pour les tronçons des unités par la célérité du fichier global
+-
+
+### splashmodels.py ###
+
+ 18-01-2022:
+ - Replacement de unit_width et unit_length par le paramètre 'aire', qui 
+   correspond à l'aire concentrée de tout le UHRH divisé par le nombre de 
+   rigoles.
+

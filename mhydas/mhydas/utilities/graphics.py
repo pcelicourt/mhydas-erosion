@@ -85,37 +85,50 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
                        "data_group": ["precipitation"]*len(Pluie[variablesdefinition.precipitation_label]),
                        "data_categories": ["precipitation"]*len(Pluie[variablesdefinition.precipitation_label])
                        })
-    data = data.append(pd.DataFrame({"timestamp": infil[variablesdefinition.datetime].values,
-                       "values": list(map(lambda value: value/global_parameters[variablesdefinition.dt],
-                                          infil[variablesdefinition.infiltration_rate_label_custom].values)),
-                       "data_group": ["precipitation"]*len(precipitation_values),
-                       "data_categories": ["infiltration"]*len(precipitation_values)
-                       }))
+
+    data = pd.concat([data, 
+                      pd.DataFrame({"timestamp": infil[variablesdefinition.datetime].values,
+                                         "values": list(map(lambda value: value/global_parameters[variablesdefinition.dt],
+                                                            infil[variablesdefinition.infiltration_rate_label_custom].values)),
+                                         "data_group": ["precipitation"]*len(precipitation_values),
+                                         "data_categories": ["infiltration"]*len(precipitation_values)
+                                         })], 
+                                               ignore_index=True, sort=False)
     streamflow_values = streamflow[variablesdefinition.streamflow_label_custom].values
-    data = data.append(pd.DataFrame({"timestamp": streamflow[variablesdefinition.datetime].values,
-                       "values": streamflow_values,
-                       "data_group": ["flow"]*len(streamflow_values),
-                       "data_categories": ["measured flow"]*len(streamflow_values)
-                       }))
-    data = data.append(pd.DataFrame({"timestamp": main_time_stamps,
-                       "values": Q_sortie_parcelle,
-                       "data_group": ["flow"]*len(Q_sortie_parcelle),
-                       "data_categories": ["simulated flow"]*len(Q_sortie_parcelle)
-                       }))
 
+    data = pd.concat([data, 
+                      pd.DataFrame({"timestamp": streamflow[variablesdefinition.datetime].values,
+                                         "values": streamflow_values,
+                                         "data_group": ["flow"]*len(streamflow_values),
+                                         "data_categories": ["measured flow"]*len(streamflow_values)
+                                         })], 
+                                               ignore_index=True, sort=False)    
+  
+    data = pd.concat([data, 
+                      pd.DataFrame({"timestamp": main_time_stamps,
+                                         "values": Q_sortie_parcelle,
+                                         "data_group": ["flow"]*len(Q_sortie_parcelle),
+                                         "data_categories": ["simulated flow"]*len(Q_sortie_parcelle)
+                                         })], 
+                                               ignore_index=True, sort=False)
     computed_erosion_values = CALC_CONC_TR_LISEM[:, int(local_parameters[variablesdefinition.nb_unit])-1]
-    data = data.append(pd.DataFrame({"timestamp": main_time_stamps,
-                       "values": computed_erosion_values,
-                       "data_group": ["erosion"]*len(computed_erosion_values),
-                       "data_categories": ["simulated erosion"]*len(computed_erosion_values)
-                       }))
-    measured_erosion_values = mes[variablesdefinition.concentration_label].values
-    data = data.append(pd.DataFrame({"timestamp": mes[variablesdefinition.datetime].values,
-                       "values": measured_erosion_values,
-                       "data_group": ["erosion"]*len(measured_erosion_values),
-                       "data_categories": ["measured erosion"]*len(measured_erosion_values)
-                       }))
 
+    data = pd.concat([data, 
+                      pd.DataFrame({"timestamp": main_time_stamps,
+                                         "values": computed_erosion_values,
+                                         "data_group": ["erosion"]*len(computed_erosion_values),
+                                         "data_categories": ["simulated erosion"]*len(computed_erosion_values)
+                                         })], 
+                                               ignore_index=True, sort=False)    
+    measured_erosion_values = mes[variablesdefinition.concentration_label].values
+
+    data = pd.concat([data, 
+                      pd.DataFrame({"timestamp": mes[variablesdefinition.datetime].values,
+                                         "values": measured_erosion_values,
+                                         "data_group": ["erosion"]*len(measured_erosion_values),
+                                         "data_categories": ["measured erosion"]*len(measured_erosion_values)
+                                         })], 
+                                               ignore_index=True, sort=False)
     grid = sns.FacetGrid(data=data, col="data_group", hue="data_categories", sharex=False, sharey=False,
                          despine=False, height=4, aspect=3, col_wrap=1, legend_out=False)
     grid.map(sns.lineplot, "timestamp", "values")
@@ -138,18 +151,19 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
         ax.legend()
     plt.savefig("./sedimentograph.jpg", dpi=150)
     plt.show()
+    return data[data["data_group"]=="erosion"]
 
 def erosion_balance_per_block(splash_method, CALC_Prod_interne_Tr, local_parameters, global_parameters,
                               sed_mes, CALC_Sortie_MES_Parcelle, CALC_Splash_Effectif_Parcelle,
                               CALC_Splash_Direct_Tot_Parcelle, CALC_Splash_Indirect_Tot_Parcelle,
                               L_Pluie, L_Inf, Vol_mes, Vol_cal, Qmax_mes,
                               Qmax_cal, L_Ruiss, coeff_Nash):
-    #print(CALC_Prod_interne_Tr)
+
     model_summary = [' BILAN PAR TRONCON : Modèle {0} \n'.format(splash_method),
                      '  Internal production  (kg) in {0} elementary units \n'.format(
                          int(local_parameters[variablesdefinition.nb_unit])),
-                     '  {0} {1}  {2}   (kg) \n'.format(*[round(x, 4) for x in CALC_Prod_interne_Tr]),
-                     '  {0} {1}  {2}   (mm) \n'.format(*list(map(lambda _calculated_internal_production:
+                     '  {0}  (kg) \n'.format(*[round(x, 4) for x in CALC_Prod_interne_Tr]),
+                     '  {0}  (mm) \n'.format(*list(map(lambda _calculated_internal_production:
                                                             round(_calculated_internal_production * 1000 / (
                                  local_parameters[variablesdefinition.dens_sed] * 1000 *
                                  local_parameters[variablesdefinition.long_uh] *
