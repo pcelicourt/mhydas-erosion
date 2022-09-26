@@ -481,3 +481,10 @@ def measured_sediment_mass(streamflow, mes):
         #Q2 = [flow * 86400 for flow in Q2]
         measured_sediment_mass += np.trapz(y=Q2, dx=60) * mes[variablesdefinition.concentration_label].values[-1]
     return measured_sediment_mass
+
+
+def aggregate_sediments_data(data_frame, date_column, time_step="6H"):
+    return data_frame.resample(time_step, on=date_column).sum()
+
+def save_sediments_data(data_frame, file_path):
+    data_frame.to_csv(file_path)

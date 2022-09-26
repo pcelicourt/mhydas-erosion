@@ -46,11 +46,26 @@ def execute_model():
         water_erosion_model.sediment_concentration_data = sediments_data
         water_erosion_model.streamflow_data = streamflow_data
         
+        master_sendiment_data_frame = pd.DataFrame()
+        
         for local_parameters in local_parameters_set:
             water_erosion_model.local_parameters = local_parameters
             water_erosion_model.set_local_parameters()
-            results = water_erosion_model.create_sedimentograph()
-            print(results[results["data_categories"] == "measured erosion"].values)#ADD RESULTS TO A CSV USING PANDAS
+            sediments_data = water_erosion_model.create_sedimentograph()
+            
+            sediments_data = sediments_data[sediments_data["data_categories"] == "simulated erosion"]
+
+            aggregated_sediments_data = sediments.aggregate_sediments_data(sediments_data, 
+                                                                           date_column="timestamp", 
+                                                                           time_step="6H"
+                                                                          )
+            master_sendiment_data_frame = pd.concat([master_sendiment_data_frame,
+                                                     aggregated_sediments_data],
+                                                    axis=1)
+        master_sendiment_data_frame.columns = ["Parcelle_{0}".format(i) for i in range(1, len(local_parameters_set) + 1) ]
+        sediments.save_sediments_data(master_sendiment_data_frame, "sediments.csv")
+            
+            #ADD RESULTS TO A CSV USING PANDAS
     else:
         water_erosion_model = erosion.Model(data_file_dir)
         

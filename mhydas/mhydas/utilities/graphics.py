@@ -49,7 +49,7 @@ sns.set(style="ticks", color_codes=True, rc={"lines.linewidth": 0.75})
 #     #hold off
 
 
-def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle,mes,
+def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle, mes,
                     sed_mes, CALC_CONC_TR_LISEM, CALC_Sortie_MES_Parcelle, CALC_Prod_interne_Tr, Cmax_mes, Cmax_cal,
                     L_Pluie, L_Inf, L_Ruiss, Vol_mes, Vol_cal, Qmax_mes, Qmax_cal, coeff_Nash,
                     global_parameters, local_parameters
