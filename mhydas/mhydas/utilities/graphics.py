@@ -52,7 +52,7 @@ sns.set(style="ticks", color_codes=True, rc={"lines.linewidth": 0.75})
 def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle, mes,
                     sed_mes, CALC_CONC_TR_LISEM, CALC_Sortie_MES_Parcelle, CALC_Prod_interne_Tr, Cmax_mes, Cmax_cal,
                     L_Pluie, L_Inf, L_Ruiss, Vol_mes, Vol_cal, Qmax_mes, Qmax_cal, coeff_Nash,
-                    global_parameters, local_parameters
+                    global_parameters, local_parameters, show_plot=False
                     ):
     # function f_MHYDAS_UH_graphique_MES(Pluie, infil, streamflow, MES, Q_cal, SED_mes, CALC_Sortie_MES_Parcelle, CALC_CONC_TR_LISEM, CALC_Splash_Direct_Tot_Parcelle, CALC_Splash_Indirect_Tot_Parcelle, CALC_Splash_Effectif_Parcelle, CALC_Prod_interne_Tr, PARAM,metod)
     # % Tracé graphique : - pluie, hydrogrammes & turbidigrammes mesuré et simulé (FIGURE 2)
@@ -129,28 +129,29 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle, mes,
                                          "data_categories": ["measured erosion"]*len(measured_erosion_values)
                                          })], 
                                                ignore_index=True, sort=False)
-    grid = sns.FacetGrid(data=data, col="data_group", hue="data_categories", sharex=False, sharey=False,
-                         despine=False, height=4, aspect=3, col_wrap=1, legend_out=False)
-    grid.map(sns.lineplot, "timestamp", "values")
-    grid.add_legend()
-    titles = [title_pluie, title_debit, title_erosion]
-    ylabels = [ylabel_pluie, ylabel_debit, ylabel_erosion]
-    x_dates = Pluie[variablesdefinition.datetime].apply(lambda x: x.strftime('%H:%M')).sort_values().unique()
-    y_ticks_ranges = [np.linspace(0, max(precipitation_values), 10), np.linspace(0, max(streamflow_values),10),
-                      np.linspace(0, max(measured_erosion_values), 10)]
-    grid.fig.subplots_adjust(wspace=.25, hspace=.25)
-    for index, ax in enumerate(grid.axes.ravel()):
-        ax.set_ylabel(ylabels[index])
-        ax.set_title(titles[index])
-        ax.tick_params(labelbottom=True)
-        ax.set_xlabel(xlabel)
-        ax.xaxis.set_major_locator(ticker.FixedLocator(list(range(len(x_dates)))))
-        ax.xaxis.set_major_formatter(ticker.FixedFormatter(x_dates))
-        #ax.set_xticklabels(labels=x_dates)
-        ax.set_yticks(y_ticks_ranges[index])
-        ax.legend()
-    plt.savefig("./sedimentograph.jpg", dpi=150)
-    plt.show()
+    if show_plot==True:
+        grid = sns.FacetGrid(data=data, col="data_group", hue="data_categories", sharex=False, sharey=False,
+                              despine=False, height=4, aspect=3, col_wrap=1, legend_out=False)
+        grid.map(sns.lineplot, "timestamp", "values")
+        grid.add_legend()
+        titles = [title_pluie, title_debit, title_erosion]
+        ylabels = [ylabel_pluie, ylabel_debit, ylabel_erosion]
+        x_dates = Pluie[variablesdefinition.datetime].apply(lambda x: x.strftime('%H:%M')).sort_values().unique()
+        y_ticks_ranges = [np.linspace(0, max(precipitation_values), 10), np.linspace(0, max(streamflow_values),10),
+                          np.linspace(0, max(measured_erosion_values), 10)]
+        grid.fig.subplots_adjust(wspace=.25, hspace=.25)
+        for index, ax in enumerate(grid.axes.ravel()):
+            ax.set_ylabel(ylabels[index])
+            ax.set_title(titles[index])
+            ax.tick_params(labelbottom=True)
+            ax.set_xlabel(xlabel)
+            ax.xaxis.set_major_locator(ticker.FixedLocator(list(range(len(x_dates)))))
+            ax.xaxis.set_major_formatter(ticker.FixedFormatter(x_dates))
+            #ax.set_xticklabels(labels=x_dates)
+            ax.set_yticks(y_ticks_ranges[index])
+            ax.legend()
+        plt.savefig("./sedimentograph.jpg", dpi=150)
+        plt.show()
     return data[data["data_group"]=="erosion"]
 
 def erosion_balance_per_block(splash_method, CALC_Prod_interne_Tr, local_parameters, global_parameters,

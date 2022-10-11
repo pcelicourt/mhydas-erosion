@@ -364,7 +364,7 @@ class Model:
         # %calcul de la masse en sédiment mesurée exportée
         self.sed_mes = sediments.measured_sediment_mass(self.streamflow_data, self.sediment_concentration_data)
 
-    def create_sedimentograph(self):
+    def create_sedimentograph(self, show_plot=False):
         _global_parameters = self.get_global_parameters()
         _local_parameters = self.get_local_parameters()
         #precipitation_data = self.get_precipitation_data()
@@ -383,21 +383,22 @@ class Model:
                                 self.Cmax_cal, self.L_Pluie, self.L_Inf, 
                                 self.L_Ruiss, self.Vol_mes, self.Vol_cal, 
                                 self.Qmax_mes, self.Qmax_cal, self.coeff_Nash,
-                                _global_parameters, _local_parameters
+                                _global_parameters, _local_parameters, show_plot=False
                                 )
-        graphics.erosion_balance_per_block(self.splash_method, 
-                                           self.CALC_Prod_interne_Tr, 
-                                           _local_parameters,
-                                           _global_parameters, self.sed_mes, 
-                                           self.CALC_Sortie_MES_Parcelle,
-                                           self.CALC_Splash_Effectif_Parcelle, 
-                                           self.CALC_Splash_Direct_Tot_Parcelle,
-                                           self.CALC_Splash_Indirect_Tot_Parcelle,
-                                           self.L_Pluie, self.L_Inf, 
-                                           self.Vol_mes, self.Vol_cal, 
-                                           self.Qmax_mes, self.Qmax_cal, 
-                                           self.L_Ruiss, self.coeff_Nash
-                                           )
+        if show_plot:
+            graphics.erosion_balance_per_block(self.splash_method, 
+                                                self.CALC_Prod_interne_Tr, 
+                                                _local_parameters,
+                                                _global_parameters, self.sed_mes, 
+                                                self.CALC_Sortie_MES_Parcelle,
+                                                self.CALC_Splash_Effectif_Parcelle, 
+                                                self.CALC_Splash_Direct_Tot_Parcelle,
+                                                self.CALC_Splash_Indirect_Tot_Parcelle,
+                                                self.L_Pluie, self.L_Inf, 
+                                                self.Vol_mes, self.Vol_cal, 
+                                                self.Qmax_mes, self.Qmax_cal, 
+                                                self.L_Ruiss, self.coeff_Nash
+                                                )
         return data
 
 # if __name__ == '__main__':

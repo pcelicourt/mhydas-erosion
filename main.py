@@ -27,7 +27,7 @@ sediment_data_path = os.path.join(data_file_dir,
 streamflow_data_path = os.path.join(data_file_dir, 
                                    streamflow_data_path)
         
-def execute_model():
+def execute_model(show_plot=False):
     if os.path.exists(local_config_file_path):
         local_parameters_set = pd.read_csv(local_config_file_path).to_dict('records')
         global_parameters = pd.read_csv(global_config_file_path).to_dict('records')[0]
@@ -51,7 +51,7 @@ def execute_model():
         for local_parameters in local_parameters_set:
             water_erosion_model.local_parameters = local_parameters
             water_erosion_model.set_local_parameters()
-            sediments_data = water_erosion_model.create_sedimentograph()
+            sediments_data = water_erosion_model.create_sedimentograph(show_plot=False)
             
             sediments_data = sediments_data[sediments_data["data_categories"] == "simulated erosion"]
 
@@ -71,7 +71,7 @@ def execute_model():
         
         
 if __name__ == '__main__':
-    execute_model()
+    execute_model(show_plot=False)
 
 #Press the green button in the gutter to run the script.
 #new_erosion_model.set_parameters()
