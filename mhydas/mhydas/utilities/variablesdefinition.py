@@ -72,4 +72,7 @@ infiltration_rate_label_custom = "infiltration_m_s"
 time_step = "time_step"
 net_precipitation = "net_precipitation"
 timestamp = "timestamp"
-
+simulated_erosion = "simulated erosion"
+measured_erosion = "measured erosion"
+flow = "flow"
+erosion = "erosion"

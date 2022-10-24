@@ -93,7 +93,7 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle, mes,
                                          "data_group": ["precipitation"]*len(precipitation_values),
                                          "data_categories": ["infiltration"]*len(precipitation_values)
                                          })], 
-                                               ignore_index=True, sort=False)
+                                              ignore_index=True, sort=False)
     streamflow_values = streamflow[variablesdefinition.streamflow_label_custom].values
 
     data = pd.concat([data, 
@@ -152,6 +152,7 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle, mes,
             ax.legend()
         plt.savefig("./sedimentograph.jpg", dpi=150)
         plt.show()
+    #print(data[data["data_group"]=="erosion"])
     return data[data["data_group"]=="erosion"]
 
 def erosion_balance_per_block(splash_method, CALC_Prod_interne_Tr, local_parameters, global_parameters,

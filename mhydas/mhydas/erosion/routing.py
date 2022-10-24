@@ -72,6 +72,7 @@ def hayamimodel(parameters_as_dict, long_bief, celerite_bief):
 
     noyeau = []
     var1 = math.sqrt(teta * zed / 3.1416)
+    
     if teta > 0.1 * parameters_as_dict[variablesdefinition.dt]:
         for i in range(int(parameters_as_dict[variablesdefinition.duree_max_noyau])):
             t = (i + 0.5) * parameters_as_dict[variablesdefinition.dt]
@@ -84,8 +85,10 @@ def hayamimodel(parameters_as_dict, long_bief, celerite_bief):
         noyeau.append(0.5 / parameters_as_dict[variablesdefinition.dt])
         for i in range(2, int(parameters_as_dict[variablesdefinition.duree_max_noyau])):
             noyeau.append(0)
+            
     volume = sum(noyeau) * parameters_as_dict[variablesdefinition.dt]
     noyeau_final = list(map(lambda x: x / volume, noyeau))
+
     return noyeau_final
 
 

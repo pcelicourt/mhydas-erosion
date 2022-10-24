@@ -4,8 +4,6 @@ from datetime import datetime
 
 import matplotlib.dates as dates
 import numpy as np
-#import scipy.integrate as spi
-from scipy import interpolate
 import pandas as pd
 
 from mhydas.mhydas.utilities import variablesdefinition
@@ -20,7 +18,6 @@ def get_sediment_concentration_data(data_path):
     for index, row in data.iterrows():
         _time = datetime(*list(map(int, row.values[:6])))
         values = [_time, row.values[6]] #datetime.toordinal(_time) + 366,
-        #mes_concentration_data = mes_concentration_data.append(dict(zip(columns, values)), ignore_index=True)
         mes_concentration_data = pd.concat([mes_concentration_data, 
                                                 pd.DataFrame.from_records([dict(zip(columns, values))])], 
                                                ignore_index=True, sort=False)
@@ -142,6 +139,7 @@ def sediment_production_per_time_interval(Masse_antecedent, Apport_Splash, Appor
                      (local_parameters_as_dict[variablesdefinition.visc_fluide]**2))**(1/3)) *\
                    local_parameters_as_dict[variablesdefinition.d50_sed]
     #% Application de la formule de Soulsby
+    #print(conc_antecedent)
     Vit_depot = (local_parameters_as_dict[variablesdefinition.visc_fluide]/local_parameters_as_dict[variablesdefinition.d50_sed]) *\
                 ((10.36**2+1.049*(1-conc_antecedent/2650)**4.7 * D_specifique**3)**0.5-10.36)
     #%Vit_depot = Vit_depot * PARAM.Coeff_Phi;
@@ -236,7 +234,7 @@ def sediments_concentration_per_unit(SPLASH_CALC_UNIT_LISEM, H_CALC_UNIT,  V_CAL
 
     CALC_CONC_TR_LISEM = np.empty(shape=(data_length, nb_unit + 1))
     CALC_CONC_TR_LISEM[0] = [0] * (nb_unit + 1)
-
+    #print("sediments", list(CALC_CONC_TR_LISEM))
     # % ******   CALCUL DE PARAMETRES INTERMEDIAIRES CONSTANTS POUR PRODUCTION INTERNE EN SEDIMENTS   *****
     # % fonction f_MHYDAS_UH_Flow_LISEM_Erosion
     # % Calcul des coefficients expérimentaux pour l'obtention de la capacité de transport
@@ -294,6 +292,7 @@ def sediments_concentration_per_unit(SPLASH_CALC_UNIT_LISEM, H_CALC_UNIT,  V_CAL
                                     global_parameters_as_dict[variablesdefinition.dt]
                  #% Sortie de sédiments à l'aval du tronçon en Kg/pas de temps --> Q_CALC_SORTIE (t-1,Tr)
                  Perte_Aval = CALC_CONC_TR_LISEM[j-1][i] * Q_CALC_SORTIE[j-1][i] * global_parameters_as_dict[variablesdefinition.dt]#;
+                 #print("sediments", j-1, i, CALC_CONC_TR_LISEM[j-1], CALC_CONC_TR_LISEM[j-1][i])
                  Prod_interne, tc_lisem = sediment_production_per_time_interval(Masse_antecedent, Apport_Splash,
                                                                                Apport_Amont, Perte_Aval,
                                                                                CALC_CONC_TR_LISEM[j-1][i],
@@ -305,14 +304,14 @@ def sediments_concentration_per_unit(SPLASH_CALC_UNIT_LISEM, H_CALC_UNIT,  V_CAL
                  #% ECRITURE DU BILAN
 
                  Masse_Tr_LISEM = Masse_antecedent + Prod_interne + Apport_Splash + Apport_Amont - Perte_Aval#;
-                 if CALC_VOL_TR_LISEM[j][i] == 0:
+
+                 if int(CALC_VOL_TR_LISEM[j][i]) == 0:
                      Conc_Tr_LISEM = 0
                  else:
                      Conc_Tr_LISEM = Masse_Tr_LISEM / CALC_VOL_TR_LISEM[j][i]
             CALC_TC_LISEM[j][i] = tc_lisem
             CALC_CONC_TR_LISEM[j][i] = Conc_Tr_LISEM
             MASSE_SED[j][i] = Masse_Tr_LISEM
-            #MASSE_SED[j][i] = Masse_Tr_LISEM
             CALC_PROD_INTERNE[j][i] = Prod_interne
 
         if Q_CALC_UNIT[j][nb_unit] < 0.0000001 or Q_CALC_SORTIE[j][nb_unit-1] < 0.00000001:
@@ -472,13 +471,10 @@ def measured_sediment_mass(streamflow, mes):
                                ).replace(tzinfo=None)
         Q_t_deb = np.interp(dates.date2num(t_deb), _date_times,
                            streamflow[variablesdefinition.streamflow_label_custom].values)
-        # time2 = [np.datetime64(t_deb)] + list(streamflow[t_deb < streamflow[variablesdefinition.datetime]
-        #                                       ][variablesdefinition.datetime].values
-        #              )
+
 
         Q2 = [Q_t_deb] + list(streamflow[t_deb < streamflow[variablesdefinition.datetime]]
                               [variablesdefinition.streamflow_label_custom].values)
-        #Q2 = [flow * 86400 for flow in Q2]
         measured_sediment_mass += np.trapz(y=Q2, dx=60) * mes[variablesdefinition.concentration_label].values[-1]
     return measured_sediment_mass
 
