@@ -111,7 +111,7 @@ def sedimentograph(Pluie, infil, streamflow, Q_sortie_parcelle, mes,
                                          "data_categories": ["simulated flow"]*len(Q_sortie_parcelle)
                                          })], 
                                                ignore_index=True, sort=False)
-    computed_erosion_values = CALC_CONC_TR_LISEM[:, int(local_parameters[variablesdefinition.nb_unit])-1]
+    computed_erosion_values = CALC_CONC_TR_LISEM[:, int(local_parameters[variablesdefinition.nb_unit])]#CALC_CONC_TR_LISEM[:, int(local_parameters[variablesdefinition.nb_unit])-1]
 
     data = pd.concat([data, 
                       pd.DataFrame({"timestamp": main_time_stamps,

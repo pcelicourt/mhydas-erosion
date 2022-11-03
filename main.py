@@ -16,6 +16,7 @@ global_parameters_path = "global_param.csv"
 precipitation_data_path	= "pluvio_Philippsburg_2011.txt"
 streamflow_data_path	= "debit_Philippsburg_2011.txt"
 mes_concentration_data_path  = "MES_Philippsburg_2011.txt"
+
 slope_data_path = "Pente.txt"
 
 local_config_file_abs_path = os.path.join(data_file_dir, local_parameters_path)
@@ -49,7 +50,7 @@ def get_aggregated_sediment_data(model_instance,
                                  erosion_variable_type = variablesdefinition.simulated_erosion, 
                                  time_step="6H", show_plot=False):
     sediments_data = model_instance.create_sedimentograph(show_plot=show_plot)
-    
+
     sediments_data = sediments_data[sediments_data["data_categories"] == erosion_variable_type]
     
     sediments_data = get_first_two_columns_of(sediments_data)
@@ -106,14 +107,13 @@ def execute_model(show_plot=False):
                 erosion_model.local_parameters = local_parameters
                 erosion_model.global_parameters = global_parameters[row_number]
                 erosion_model.set_parameters() 
-                
                 precipitation_data = precipitation.disaggregate_date_time_from_minute_to_seconds(
                         erosion_model.raw_precipitation_data,
                         erosion_model.global_parameters[variablesdefinition.dt]
                     ) 
                 erosion_model.precipitation_data = precipitation_data
-                
-                aggregated_sediments_data = get_aggregated_sediment_data(erosion_model)
+                aggregated_sediments_data = get_aggregated_sediment_data(erosion_model, show_plot=show_plot)
+                #print(aggregated_sediments_data)
                 master_sendiment_data_frame = pd.concat([master_sendiment_data_frame,
                                                          aggregated_sediments_data],
                                                         axis=1)            
@@ -131,6 +131,6 @@ def execute_model(show_plot=False):
 if __name__ == '__main__':
     execute_model(show_plot=False)
 
-#Press the green button in the gutSuter to run the script.
+#Press the green button in the gutter to run the script.
 #new_erosion_model.set_parameters()
 #new_erosion_model.create_sedimentograph()

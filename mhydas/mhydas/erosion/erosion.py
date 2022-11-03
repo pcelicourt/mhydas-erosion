@@ -383,7 +383,7 @@ class Model:
                                 self.Cmax_cal, self.L_Pluie, self.L_Inf, 
                                 self.L_Ruiss, self.Vol_mes, self.Vol_cal, 
                                 self.Qmax_mes, self.Qmax_cal, self.coeff_Nash,
-                                _global_parameters, _local_parameters, show_plot=False
+                                _global_parameters, _local_parameters, show_plot=show_plot
                                 )
         if show_plot:
             graphics.erosion_balance_per_block(self.splash_method, 

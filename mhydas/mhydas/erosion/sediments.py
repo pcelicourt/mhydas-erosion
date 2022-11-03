@@ -327,7 +327,7 @@ def sediments_concentration_per_unit(SPLASH_CALC_UNIT_LISEM, H_CALC_UNIT,  V_CAL
         #% Ecriture Matrice (stockage du dernier noeud  )
         CALC_CONC_TR_LISEM[j][nb_unit] = Conc_Tr_LISEM_aval
         MASSE_SED[j][nb_unit] = Masse_Tr_LISEM_aval
-
+    #print(list(CALC_CONC_TR_LISEM))
     return CALC_CONC_TR_LISEM, CALC_PROD_INTERNE, MASSE_SED, CALC_TC_LISEM, CALC_VOL_TR_LISEM
 
 
